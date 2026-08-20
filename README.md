@@ -124,26 +124,39 @@ outcrop and downdip together: where the aquifer *exists*, not where anyone is pu
 They draw in their own map pane beneath every ring, circle and label, so turning one on
 never hides a data point.
 
-Four are carried, the same four the figures above name: **Trinity** (the Leander Springs
-well and Liberty Hill), **Edwards (Balcones Fault Zone)** (Georgetown, Round Rock, Texas
-Crushed Stone, MM-North, Brushy Creek), **Edwards-Trinity (Plateau)**, and
-**Carrizo-Wilcox** (the Hutto reference).
+Three ship, and they are the three the figures above name: **Edwards (Balcones Fault
+Zone)** (Georgetown, Round Rock, Texas Crushed Stone, MM-North, Brushy Creek),
+**Trinity** (the Leander Springs well and Liberty Hill), and **Carrizo-Wilcox** (the Hutto
+reference). A fourth rule, **Edwards-Trinity (Plateau)**, matches in the source but falls
+entirely outside `BBOX` — it is kept in `RULES` so a wider box picks it up.
 
-Building `aquifers.json` takes one manual download, because the source is far too large
-to fetch at page load — the statewide layer is tens of megabytes, and the trimmed result
-is a few dozen KB:
+Turning Edwards-BFZ and Trinity on together draws the point the numbers make: the boundary
+runs north–south through the middle of the map, with every Edwards-BFZ pumper east of it
+and Leander Springs and Liberty Hill west, on the Trinity.
 
-1. Get **Major Aquifers** from [TWDB GIS Data](https://www.twdb.texas.gov/mapping/gisdata.asp) as GeoJSON.
-2. Save it as `data/aquifers_source.geojson` (gitignored).
-3. Run `python3 scripts/build_aquifers.py`, and commit the regenerated `aquifers.json`.
+Building `aquifers.json` takes one download, because the source is far too large to fetch
+at page load — the statewide shapefile is 11 MB and the trimmed result is 204 KB (56 KB
+gzipped):
 
-The script clips to a box around Leander (`BBOX`), simplifies the outlines
-(`TOLERANCE`), and drops everything outside the four aquifers in `RULES` — all four
-constants are at the top of the file. It finds the aquifer-name attribute by looking
-rather than assuming, since TWDB has shipped it as `AQ_NAME`, `AQUIFER`, and
-`AQUIFER_NAME` across releases; it prints which field it used and every name it saw, so
-a mismatch is obvious. To have a layer start switched **on**, add it to the map in the
-`fetch('aquifers.json')` block in `index.html`.
+```sh
+curl -L -o data/major_aquifers.zip \
+    https://www.twdb.texas.gov/mapping/gisdata/doc/major_aquifers.zip
+python3 scripts/build_aquifers.py data/major_aquifers.zip
+```
+
+Commit the regenerated `aquifers.json`; the zip is gitignored. TWDB publishes a
+**shapefile**, not GeoJSON, so the script reads `.shp`/`.dbf` out of the zip directly —
+about 100 lines of stdlib struct unpacking, no converter and no extraction step. A `.shp`
+or `.geojson` path works too.
+
+The script clips to a box around Leander (`BBOX`), simplifies the outlines (`TOLERANCE`),
+and drops everything outside the aquifers in `RULES` — all constants are at the top of the
+file. It finds the aquifer-name attribute by looking rather than assuming, since TWDB has
+shipped it as `AQ_NAME`, `AQUIFER`, and `AQUIFER_NAME` across releases; it prints which
+field it used and every name it saw, so a mismatch is obvious. That reporting is what
+caught the 2006 file naming the Balcones Fault Zone Edwards simply `EDWARDS`, which an
+`("edwards", "balcones")` keyword rule silently skipped. To have a layer start switched
+**on**, add it to the map in the `fetch('aquifers.json')` block in `index.html`.
 
 Simplified outlines are for display. Anything that turns on an exact boundary should go
 back to the TWDB source.

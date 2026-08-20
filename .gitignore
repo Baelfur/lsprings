@@ -12,5 +12,6 @@ venv/
 .vscode/
 .idea/
 
-# TWDB aquifer download: tens of MB, and only the trimmed aquifers.json ships.
+# TWDB aquifer download: 11 MB, and only the trimmed aquifers.json ships.
+data/major_aquifers.zip
 data/aquifers_source.geojson

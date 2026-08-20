@@ -1,26 +1,28 @@
-"""Build aquifers.json from a TWDB aquifer GeoJSON export. Standard library only.
+"""Build aquifers.json from the TWDB Major Aquifers download. Standard library only.
 
 The statewide TWDB layer is tens of megabytes -- far too big to fetch on page
 load. This trims it to what the map actually shows: the aquifers we name, clipped
 to a box around Leander, with the outlines simplified.
 
-Download the source first (this repo's build environment has no network access
-to twdb.texas.gov, so it is a manual step):
+TWDB publishes this as a shapefile, not GeoJSON, so the reader below takes the
+zip as-is -- no converter, no extraction step:
 
-    https://www.twdb.texas.gov/mapping/gisdata.asp  ->  Major Aquifers
+    curl -L -o data/major_aquifers.zip \\
+        https://www.twdb.texas.gov/mapping/gisdata/doc/major_aquifers.zip
+    python3 scripts/build_aquifers.py data/major_aquifers.zip
 
-Take the GeoJSON export and save it as data/aquifers_source.geojson, then:
-
-    python3 scripts/build_aquifers.py [path/to/source.geojson]
+A .shp or a .geojson also works, if you already have one.
 """
 
 import json
 import math
 import pathlib
+import struct
 import sys
+import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_SOURCE = ROOT / "data" / "aquifers_source.geojson"
+DEFAULT_SOURCE = ROOT / "data" / "major_aquifers.zip"
 OUTPUT = ROOT / "aquifers.json"
 
 # Clip box around the map's contents: roughly 40 mi either side of CENTER.
@@ -40,10 +42,119 @@ MIN_RING_AREA = 1e-6
 # before the bare "Trinity" rule can claim them.
 RULES = [
     ("edwards-trinity", "Edwards-Trinity (Plateau)", "#6b8f3a", ("edwards", "trinity")),
-    ("edwards-bfz", "Edwards (Balcones Fault Zone)", "#2a7a9b", ("edwards", "balcones")),
+    # TWDB's 2006 file calls the Balcones Fault Zone Edwards just "EDWARDS";
+    # later releases spell it out. Matching on "edwards" alone covers both, and
+    # is safe because the edwards-trinity rule above has already claimed the
+    # plateau aquifer by the time we get here.
+    ("edwards-bfz", "Edwards (Balcones Fault Zone)", "#2a7a9b", ("edwards",)),
     ("trinity", "Trinity", "#8a6d3b", ("trinity",)),
     ("carrizo-wilcox", "Carrizo-Wilcox", "#9b4a6f", ("carrizo",)),
 ]
+
+
+# --- shapefile reading ----------------------------------------------------
+# TWDB ships Major Aquifers as a shapefile, not GeoJSON, so read it directly
+# rather than making the user find a converter. Only what this one file needs:
+# polygon geometry from the .shp, one text attribute from the .dbf.
+
+
+def _dbf_records(data):
+    """Yield each .dbf row as a dict. Enough of dBASE III to read attributes."""
+    count, header_len, record_len = struct.unpack("<I2H", data[4:12])
+    fields = []
+    pos = 32
+    while data[pos] != 0x0D:                       # 0x0D ends the field list
+        name = data[pos:pos + 11].split(b"\0")[0].decode("latin-1").strip()
+        length = data[pos + 16]
+        fields.append((name, length))
+        pos += 32
+    pos = header_len
+    for _ in range(count):
+        row = data[pos:pos + record_len]
+        pos += record_len
+        if not row or row[0:1] == b"*":            # deleted record
+            continue
+        out, at = {}, 1
+        for name, length in fields:
+            out[name] = row[at:at + length].decode("latin-1").strip()
+            at += length
+        yield out
+
+
+def _rings_to_geometry(rings):
+    """Group shapefile rings into GeoJSON polygons.
+
+    A shapefile record holds every ring flat, outers and holes together, with
+    winding as the only thing telling them apart: outer rings run clockwise,
+    holes counter-clockwise. Each clockwise ring opens a new polygon and the
+    counter-clockwise rings that follow belong to it.
+    """
+    polys = []
+    for ring in rings:
+        signed = 0.0
+        for i in range(len(ring)):
+            x1, y1 = ring[i]
+            x2, y2 = ring[(i + 1) % len(ring)]
+            signed += x1 * y2 - x2 * y1
+        if signed < 0 or not polys:                # clockwise, or a stray hole
+            polys.append([ring])                   # with no outer yet
+        else:
+            polys[-1].append(ring)
+    if not polys:
+        return None
+    if len(polys) == 1:
+        return {"type": "Polygon", "coordinates": polys[0]}
+    return {"type": "MultiPolygon", "coordinates": polys}
+
+
+def read_shapefile(shp_bytes, dbf_bytes):
+    """Read polygon features from raw .shp/.dbf bytes into GeoJSON features."""
+    attrs = list(_dbf_records(dbf_bytes))
+    features, pos, end = [], 100, len(shp_bytes)   # 100-byte file header
+    while pos + 8 <= end:
+        _, content_words = struct.unpack(">2I", shp_bytes[pos:pos + 8])
+        body = pos + 8
+        pos = body + content_words * 2
+        shape_type = struct.unpack("<i", shp_bytes[body:body + 4])[0]
+        if shape_type not in (5, 15, 25):          # Polygon, PolygonZ, PolygonM
+            continue
+        n_parts, n_points = struct.unpack("<2i", shp_bytes[body + 36:body + 44])
+        at = body + 44
+        parts = struct.unpack(f"<{n_parts}i", shp_bytes[at:at + 4 * n_parts])
+        at += 4 * n_parts
+        flat = struct.unpack(f"<{2 * n_points}d", shp_bytes[at:at + 16 * n_points])
+        pts = list(zip(flat[0::2], flat[1::2]))
+        bounds = list(parts) + [n_points]
+        rings = [pts[bounds[i]:bounds[i + 1]] for i in range(n_parts)]
+        geom = _rings_to_geometry([r for r in rings if len(r) >= 4])
+        if not geom:
+            continue
+        i = len(features)
+        features.append({"type": "Feature",
+                         "properties": attrs[i] if i < len(attrs) else {},
+                         "geometry": geom})
+    return features
+
+
+def load_features(source):
+    """Read features from a .geojson, a .shp (with its .dbf), or the TWDB .zip."""
+    suffix = source.suffix.lower()
+    if suffix in (".geojson", ".json"):
+        return json.loads(source.read_text(encoding="utf-8")).get("features") or []
+    if suffix == ".zip":
+        with zipfile.ZipFile(source) as z:
+            shp = next((n for n in z.namelist() if n.lower().endswith(".shp")), None)
+            if not shp:
+                sys.exit(f"no .shp inside {source}")
+            dbf = shp[:-4] + ".dbf"
+            if dbf not in z.namelist():
+                dbf = next((n for n in z.namelist() if n.lower().endswith(".dbf")), None)
+            return read_shapefile(z.read(shp), z.read(dbf) if dbf else b"")
+    if suffix == ".shp":
+        dbf = source.with_suffix(".dbf")
+        return read_shapefile(source.read_bytes(),
+                              dbf.read_bytes() if dbf.exists() else b"")
+    sys.exit(f"unsupported source {source} -- want .zip, .shp or .geojson")
 
 
 def find_name_field(features):
@@ -174,8 +285,7 @@ def polygons(geom):
 
 
 def build(source):
-    raw = json.loads(source.read_text(encoding="utf-8"))
-    features = raw.get("features") or []
+    features = load_features(source)
     if not features:
         sys.exit(f"no features in {source}")
 
@@ -226,6 +336,6 @@ def build(source):
 if __name__ == "__main__":
     src = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_SOURCE
     if not src.exists():
-        sys.exit(f"missing {src}\nDownload the TWDB Major Aquifers GeoJSON first "
+        sys.exit(f"missing {src}\nDownload the TWDB Major Aquifers zip first "
                  f"-- see the docstring at the top of this file.")
     build(src)
