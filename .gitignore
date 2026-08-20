@@ -11,3 +11,6 @@ venv/
 # Editors
 .vscode/
 .idea/
+
+# TWDB aquifer download: tens of MB, and only the trimmed aquifers.json ships.
+data/aquifers_source.geojson

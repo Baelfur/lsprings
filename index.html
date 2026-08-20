@@ -22,13 +22,20 @@
   .badge.estimated { background: #b26a00; color: #fff; }
   .badge.developer { background: #1c5aa8; color: #fff; }
   .badge.pumpage   { background: #5b3d8f; color: #fff; }
-  .gw-label {
+  /* One label style; each modifier only sets its colour. The border and the
+     tooltip arrow both take currentColor, so colour is stated once. */
+  .map-label {
     font: 600 12px/1.3 system-ui, sans-serif;
     background: rgba(255,255,255,0.93);
-    border: 1px dashed #4a2f78; color: #4a2f78;
+    border: 1px solid currentColor;
     padding: 3px 6px; border-radius: 3px; box-shadow: none; white-space: nowrap;
   }
-  .gw-label::before { border-right-color: #4a2f78; }
+  /* Leaflet colours the arrow per direction; set both so a label can point
+     either way. These come after leaflet.css, so they win on equal specificity. */
+  .map-label::before { border-right-color: currentColor; border-left-color: currentColor; }
+  .map-label.gw      { color: #4a2f78; border-style: dashed; }
+  .map-label.subject { color: #123f75; }
+  .map-label.site    { color: #7a2718; }
   .legend {
     background: rgba(255,255,255,0.94); padding: 8px 10px; border-radius: 4px;
     font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
@@ -36,25 +43,12 @@
   .legend b { display: block; margin-bottom: 4px; font-size: 12px; }
   .legend i { width: 12px; height: 12px; display: inline-block;
               margin-right: 6px; vertical-align: -2px; border-radius: 50%; }
-  .subject-label {
-    font: 600 12px/1.3 system-ui, sans-serif;
-    background: rgba(255,255,255,0.93);
-    border: 1px solid #123f75;
-    color: #123f75;
-    padding: 3px 6px; border-radius: 3px; box-shadow: none; white-space: nowrap;
+  .leaflet-control-layers { font: 12px/1.5 system-ui, sans-serif; }
+  .leaflet-control-layers b { display: block; margin: 2px 0 4px; }
+  .leaflet-control-layers-list i {
+    width: 12px; height: 12px; display: inline-block;
+    margin-right: 5px; vertical-align: -2px; border-radius: 2px; opacity: 0.75;
   }
-  .subject-label::before { border-right-color: #123f75; }
-  .site-label {
-    font: 600 12px/1.3 system-ui, sans-serif;
-    background: rgba(255,255,255,0.93);
-    border: 1px solid #7a2718;
-    color: #7a2718;
-    padding: 3px 6px;
-    border-radius: 3px;
-    box-shadow: none;
-    white-space: nowrap;
-  }
-  .site-label::before { border-right-color: #7a2718; }
 </style>
 </head>
 <body>
@@ -64,6 +58,21 @@
 const CENTER = [30.580360532644164, -97.83738257327695];
 const MILE_IN_METERS = 1609.344;
 
+// Midpoint of the developer's 8-9 AF/yr lagoon evaporation estimate. Every
+// "vs lagoon" multiple on the map is measured against this one number.
+const LAGOON_AF = 8.5;
+
+// Small multiples keep a decimal - rounding 1.35x to "1x" reads as parity.
+const vsLagoon = af => {
+  const x = af / LAGOON_AF;
+  return x < 10 ? x.toFixed(1) : Math.round(x).toLocaleString();
+};
+
+// points.json is committed data, but it is still text going into innerHTML:
+// a stray < in a note would silently break the popup it lands in.
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 const map = L.map('map').setView(CENTER, 11);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -71,17 +80,21 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Aquifer polygons are area washes: give them their own pane under the default
+// overlay pane (400) so they sit below every ring, site and label.
+map.createPane('aquifers').style.zIndex = 350;
+
 // --- reference rings around CENTER ---------------------------------------
 // Larger circle first so the darker 3 mi ring draws on top of it.
 const fiveMile = L.circle(CENTER, {
   radius: 5 * MILE_IN_METERS,
   color: '#7fce8b', weight: 2, fillColor: '#7fce8b', fillOpacity: 0.18
-}).addTo(map).bindPopup('5 mile radius');
+}).bindPopup('5 mile radius');
 
-L.circle(CENTER, {
+const threeMile = L.circle(CENTER, {
   radius: 3 * MILE_IN_METERS,
   color: '#1b6b3a', weight: 2, fillColor: '#1b6b3a', fillOpacity: 0.25
-}).addTo(map).bindPopup('3 mile radius');
+}).bindPopup('3 mile radius');
 
 // --- water use sites ------------------------------------------------------
 const SITES = [
@@ -209,10 +222,10 @@ const SITES = [
 const leanderSprings = L.circleMarker(CENTER, {
   radius: 10, color: '#123f75', weight: 2,
   fillColor: '#2b7fd4', fillOpacity: 0.95
-}).addTo(map);
+});
 
 leanderSprings.bindTooltip('Leander Springs<br>~2.8M gal/yr (lagoon)', {
-  permanent: true, direction: 'left', offset: [-14, 0], className: 'subject-label'
+  permanent: true, direction: 'left', offset: [-14, 0], className: 'map-label subject'
 });
 
 leanderSprings.bindPopup(
@@ -248,10 +261,10 @@ const markers = SITES.map(s => {
   const circle = L.circle([s.lat, s.lon], {
     radius: 0.5 * MILE_IN_METERS,
     color: '#7a2718', weight: 2, fillColor: '#d1502f', fillOpacity: 0.35
-  }).addTo(map);
+  });
 
   circle.bindTooltip(s.label, {
-    permanent: true, direction: 'right', offset: [12, 0], className: 'site-label'
+    permanent: true, direction: 'right', offset: [12, 0], className: 'map-label site'
   });
 
   const rows = s.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
@@ -301,10 +314,10 @@ const gwMarkers = GROUNDWATER.map(g => {
     radius: 0.5 * MILE_IN_METERS,
     color: '#4a2f78', weight: 2, dashArray: '5,4',
     fillColor: '#7d5bb5', fillOpacity: 0.25
-  }).addTo(map);
+  });
 
   c.bindTooltip(g.label, {
-    permanent: true, direction: 'right', offset: [12, 0], className: 'gw-label'
+    permanent: true, direction: 'right', offset: [12, 0], className: 'map-label gw'
   });
 
   c.bindPopup(
@@ -316,7 +329,7 @@ const gwMarkers = GROUNDWATER.map(g => {
       `<dt>Gallons</dt><dd>${g.gal}</dd>` +
       `<dt>Wells</dt><dd>${g.wells} reported</dd>` +
       `<dt>Aquifer</dt><dd>${g.aq}</dd>` +
-      `<dt>vs lagoon</dt><dd>${Math.round(g.af/8.5).toLocaleString()}&times; Leander Springs</dd>` +
+      `<dt>vs lagoon</dt><dd>${vsLagoon(g.af)}&times; Leander Springs</dd>` +
     '</dl>' +
     '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
       (g.system
@@ -333,6 +346,60 @@ const gwMarkers = GROUNDWATER.map(g => {
   );
   return c;
 });
+
+// --- toggleable groups ----------------------------------------------------
+const ringsLayer   = L.layerGroup([fiveMile, threeMile]).addTo(map);
+const subjectLayer = L.layerGroup([leanderSprings]).addTo(map);
+const sitesLayer   = L.layerGroup(markers).addTo(map);
+const pumpageLayer = L.layerGroup(gwMarkers).addTo(map);
+
+const layerControl = L.control.layers(null, {
+  'Leander Springs': subjectLayer,
+  'Water use sites': sitesLayer,
+  'Groundwater pumpage': pumpageLayer,
+  '3 / 5 mile rings': ringsLayer
+}, { collapsed: false, position: 'topright' }).addTo(map);
+
+// --- aquifer extents ------------------------------------------------------
+// aquifers.json is optional: absent, the map is exactly what it was. Build it
+// from the TWDB Major Aquifers layer with scripts/build_aquifers.py.
+// All aquifers start switched off - they are broad washes, and the map's
+// argument is about the points on top of them.
+fetch('aquifers.json')
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    if (!data || !Array.isArray(data.aquifers) || !data.aquifers.length) return;
+    // Count the feature rows before adding any aquifer, so the divider lands in
+    // the right place even if a fifth group is added above.
+    const list = document.querySelector('.leaflet-control-layers-overlays');
+    const featureRows = list ? list.children.length : 0;
+    data.aquifers.forEach(a => {
+      const layer = L.geoJSON(a.geojson, {
+        pane: 'aquifers',
+        style: { color: a.color, weight: 1, opacity: 0.7,
+                 fillColor: a.color, fillOpacity: 0.20 }
+      });
+      layer.bindPopup(
+        `<h3>${esc(a.name)} Aquifer</h3>` +
+        '<div class="sub">TWDB mapped extent &middot; clipped to this map</div>' +
+        '<div style="font-size:12px;color:#444;margin:8px 0">' +
+          'Full mapped extent, outcrop and downdip together &mdash; where the aquifer ' +
+          'exists, not where it is being pumped. Outlines are simplified for display; ' +
+          'use the TWDB source for anything that turns on an exact boundary.' +
+        '</div>' +
+        '<div class="srcs"><strong>Source</strong><br>' +
+          '<a href="https://www.twdb.texas.gov/mapping/gisdata.asp" target="_blank" rel="noopener">TWDB &mdash; Major Aquifers GIS data</a>' +
+        '</div>',
+        { maxWidth: 300 }
+      );
+      layerControl.addOverlay(layer, `<i style="background:${a.color}"></i>${esc(a.name)}`);
+    });
+    if (list && featureRows) {
+      list.children[featureRows - 1].insertAdjacentHTML('afterend', '<b>Aquifer extents</b>');
+      list.insertAdjacentHTML('afterbegin', '<b>Map features</b>');
+    }
+  })
+  .catch(err => console.error('failed to load aquifers.json', err));
 
 // --- legend ---------------------------------------------------------------
 const legend = L.control({ position: 'bottomleft' });
@@ -354,19 +421,25 @@ map.fitBounds(extent);
 
 // Leaflet caches the container size at init. If layout is still settling (web
 // fonts, tab restore) it measures too small and tiles stop short of the edges.
-// Re-measure once the page is fully loaded, and on every resize.
-function refit() {
+// Re-measure and re-frame once the page is fully loaded.
+window.addEventListener('load', () => {
   map.invalidateSize({ animate: false });
   map.fitBounds(extent);
-}
-window.addEventListener('load', refit);
-window.addEventListener('resize', refit);
+});
+
+// On resize, re-measure only. Re-framing here would discard whatever the user
+// panned or zoomed to, and on mobile every URL-bar hide fires a resize.
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => map.invalidateSize({ animate: false }), 150);
+});
 
 fetch('points.json')
   .then(r => r.ok ? r.json() : [])
   .then(points => {
     points.forEach(p => L.marker([p.lat, p.lon]).addTo(map).bindPopup(
-      `<strong>${p.name ?? ''}</strong>${p.note ? '<br>' + p.note : ''}`
+      `<strong>${esc(p.name ?? '')}</strong>${p.note ? '<br>' + esc(p.note) : ''}`
     ));
   })
   .catch(err => console.error('failed to load points.json', err));

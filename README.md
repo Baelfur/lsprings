@@ -6,11 +6,21 @@ A very simple map app. Static page served by GitHub Pages, data prepared by Pyth
 
 GitHub Pages only serves static files — no Python runs at request time. So:
 
-- **`index.html`** — the whole UI. Leaflet + OpenStreetMap tiles, loaded from a CDN. No build step, no framework. Draws two radius rings around a fixed center point (`CENTER` at the top of the script): 3 mi in dark green, 5 mi in light green.
+- **`index.html`** — the whole UI. Leaflet + OpenStreetMap tiles, loaded from a CDN. No build step, no framework. Draws two radius rings around a fixed center point (`CENTER` at the top of the script): 3 mi in dark green, 5 mi in light green. Every site on the map is a JS literal in this file — `SITES` (red circles) and `GROUNDWATER` (dashed purple circles).
 - **`scripts/build_data.py`** — standard library only. Reads `data/points.csv`, writes `points.json`.
-- **`points.json`** — what the page fetches at load time. Committed, so Pages can serve it.
+- **`scripts/build_aquifers.py`** — standard library only. Trims a TWDB aquifer download into `aquifers.json`. See [Aquifer extents](#aquifer-extents).
+- **`points.json`**, **`aquifers.json`** — what the page fetches at load time. Committed, so Pages can serve them. Both are optional; the map still draws without either.
+
+Everything on the map is grouped into toggles in the top-right control: the four
+feature groups (Leander Springs, water use sites, groundwater pumpage, the rings)
+and one entry per aquifer extent.
 
 ## Adding points
+
+Note the map's own contents are **not** built from the CSV — `SITES` and `GROUNDWATER`
+are hardcoded in `index.html`, and that is where a new water user with figures, a
+provenance badge, and sources belongs. The CSV pipeline below adds plain unstyled pins
+on top, for scratch or reference locations.
 
 Edit `data/points.csv`, then regenerate:
 
@@ -58,7 +68,7 @@ Two caveats the headline number hides:
   apartments at ~150 gpd/unit is ~202 AF/yr on its own — roughly 24× the lagoon figure,
   before hotel, retail, and office. *(That multiplier is our arithmetic, not from their studies.)*
 - **~25 in/yr over 4 acres** is at or just below ordinary Central Texas net evaporation
-  (~26–36 in/yr), before crediting the claimed 50–80% VVater reduction. Plausible, but
+  (~26–36 in/yr), before crediting the claimed 50–80% water reduction. Plausible, but
   not conservative. The city backup allowance (200,000 gal/day × ~90 days ≈ 55 AF) is
   ~6× the claimed annual loss.
 
@@ -77,7 +87,7 @@ reporting year 2024) — self-reported by each entity to the state, with aquifer
 | City of Round Rock | 10.7 | 1,450 | 472 | Edwards-BFZ | 3 | 171× |
 | Texas Crushed Stone | 8.4 | 1,344 | 438 | Edwards-BFZ | 1 | 158× |
 | City of Liberty Hill | 7.7 | 188 | 61 | **Trinity** | 4 | 22× |
-| MM-North Austin Quarry | 9.0 | 74 | 24 | Edwards-BFZ | 1 | 9× |
+| MM-North Austin Quarry | 9.0 | 74 | 24 | Edwards-BFZ | 1 | 8.7× |
 | Brushy Creek MUD | 6.5 | 11.5 | 3.7 | Edwards-BFZ | 3 | 1.4× |
 
 Combined: **~11,300 AF/yr**, about 1,300× the Leander Springs lagoon estimate.
@@ -101,16 +111,48 @@ Sources: [TWDB Detailed Groundwater Pumpage by County](https://www3.twdb.texas.g
 [TWDB Historical Groundwater Pumpage](https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp) ·
 [Williamson County — why the county needs a GCD](https://www.wilcotx.gov/CivicAlerts.aspx?AID=42)
 
+### Aquifer extents
+
+Off by default — tick them in the top-right control. Each is the TWDB **mapped extent**,
+outcrop and downdip together: where the aquifer *exists*, not where anyone is pumping it.
+They draw in their own map pane beneath every ring, circle and label, so turning one on
+never hides a data point.
+
+Four are carried, the same four the figures above name: **Trinity** (the Leander Springs
+well and Liberty Hill), **Edwards (Balcones Fault Zone)** (Georgetown, Round Rock, Texas
+Crushed Stone, MM-North, Brushy Creek), **Edwards-Trinity (Plateau)**, and
+**Carrizo-Wilcox** (the Hutto reference).
+
+Building `aquifers.json` takes one manual download, because the source is far too large
+to fetch at page load — the statewide layer is tens of megabytes, and the trimmed result
+is a few dozen KB:
+
+1. Get **Major Aquifers** from [TWDB GIS Data](https://www.twdb.texas.gov/mapping/gisdata.asp) as GeoJSON.
+2. Save it as `data/aquifers_source.geojson` (gitignored).
+3. Run `python3 scripts/build_aquifers.py`, and commit the regenerated `aquifers.json`.
+
+The script clips to a box around Leander (`BBOX`), simplifies the outlines
+(`TOLERANCE`), and drops everything outside the four aquifers in `RULES` — all four
+constants are at the top of the file. It finds the aquifer-name attribute by looking
+rather than assuming, since TWDB has shipped it as `AQ_NAME`, `AQUIFER`, and
+`AQUIFER_NAME` across releases; it prints which field it used and every name it saw, so
+a mismatch is obvious. To have a layer start switched **on**, add it to the map in the
+`fetch('aquifers.json')` block in `index.html`.
+
+Simplified outlines are for display. Anything that turns on an exact boundary should go
+back to the TWDB source.
+
 ### Scale, for comparison
 
 | Site | AF/yr | vs lagoon |
 |---|---|---|
-| Texas Crushed Stone | 1,107 (reported) | 130× |
+| Texas Crushed Stone | 1,343.5 (reported, 2024) | 158× |
 | Twin Creeks | ~189 (est) | 22× |
 | Crystal Falls | ~180 (est) | 21× |
 | Cimarron Hills | ~162 (est) | 19× |
 | **Leander Springs lagoon** | **8.5 (developer)** | 1× |
-Two water-use sites, each drawn as a **half-mile red circle** with a label and a popup
+
+Four water-use sites, each drawn as a **half-mile red circle** with a label and a popup
 carrying the figures and source links.
 
 ### Texas Crushed Stone — Georgetown Quarry
@@ -119,12 +161,15 @@ carrying the figures and source links.
 
 | | |
 |---|---|
-| Total | 1,106.82 acre-feet (2019) |
-| Groundwater | 1,105.64 AF (99.9%) |
-| Surface water | 1.17 AF (0.1%) |
-| Approx. | 361 million gal/yr (~988,000/day) |
+| Total | 1,343.5 acre-feet (2024) |
+| Approx. | 438 million gal/yr (~1.20M/day) |
+| Source | Groundwater, Edwards-BFZ Aquifer |
+| Wells | 1 reported (2024) |
+| 2019 | 1,106.82 AF — up 21% since |
 
-~85% of all aggregate-mining water use in Williamson County (county total 1,308 AF).
+The 2019 mining survey broke that year down as 1,105.64 AF groundwater (99.9%) and
+1.17 AF surface water — ~85% of all aggregate-mining water use in Williamson County
+(county total 1,308 AF).
 
 Sources: [TWDB/TCEQ Aggregate Mining Water Use App. III](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF) ·
 [App. IV](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF) ·
@@ -146,7 +191,7 @@ the results cluster — the spread between them is noise, not signal.
 
 ✅ documented and named · ⚠️ documented but course not named explicitly · ❌ unknown
 
-Combined, the three courses come to ~531 AF/yr — about **48% of the quarry alone**.
+Combined, the three courses come to ~531 AF/yr — about **40% of the quarry alone**.
 
 Sources: [Georgetown Water Resources FAQ](https://georgetowntexas.gov/utilities/water/resources/faqs/index.php) ·
 [Leander Water & Wastewater](https://www.leandertx.gov/506/Water-Wastewater) ·
