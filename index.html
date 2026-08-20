@@ -43,6 +43,12 @@
   .legend b { display: block; margin-bottom: 4px; font-size: 12px; }
   .legend i { width: 12px; height: 12px; display: inline-block;
               margin-right: 6px; vertical-align: -2px; border-radius: 50%; }
+  .leaflet-control-layers { font: 12px/1.5 system-ui, sans-serif; }
+  .leaflet-control-layers b { display: block; margin: 2px 0 4px; }
+  .leaflet-control-layers-list i {
+    width: 12px; height: 12px; display: inline-block;
+    margin-right: 5px; vertical-align: -2px; border-radius: 2px; opacity: 0.75;
+  }
 </style>
 </head>
 <body>
@@ -74,17 +80,21 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Aquifer polygons are area washes: give them their own pane under the default
+// overlay pane (400) so they sit below every ring, site and label.
+map.createPane('aquifers').style.zIndex = 350;
+
 // --- reference rings around CENTER ---------------------------------------
 // Larger circle first so the darker 3 mi ring draws on top of it.
 const fiveMile = L.circle(CENTER, {
   radius: 5 * MILE_IN_METERS,
   color: '#7fce8b', weight: 2, fillColor: '#7fce8b', fillOpacity: 0.18
-}).addTo(map).bindPopup('5 mile radius');
+}).bindPopup('5 mile radius');
 
-L.circle(CENTER, {
+const threeMile = L.circle(CENTER, {
   radius: 3 * MILE_IN_METERS,
   color: '#1b6b3a', weight: 2, fillColor: '#1b6b3a', fillOpacity: 0.25
-}).addTo(map).bindPopup('3 mile radius');
+}).bindPopup('3 mile radius');
 
 // --- water use sites ------------------------------------------------------
 const SITES = [
@@ -212,7 +222,7 @@ const SITES = [
 const leanderSprings = L.circleMarker(CENTER, {
   radius: 10, color: '#123f75', weight: 2,
   fillColor: '#2b7fd4', fillOpacity: 0.95
-}).addTo(map);
+});
 
 leanderSprings.bindTooltip('Leander Springs<br>~2.8M gal/yr (lagoon)', {
   permanent: true, direction: 'left', offset: [-14, 0], className: 'map-label subject'
@@ -251,7 +261,7 @@ const markers = SITES.map(s => {
   const circle = L.circle([s.lat, s.lon], {
     radius: 0.5 * MILE_IN_METERS,
     color: '#7a2718', weight: 2, fillColor: '#d1502f', fillOpacity: 0.35
-  }).addTo(map);
+  });
 
   circle.bindTooltip(s.label, {
     permanent: true, direction: 'right', offset: [12, 0], className: 'map-label site'
@@ -304,7 +314,7 @@ const gwMarkers = GROUNDWATER.map(g => {
     radius: 0.5 * MILE_IN_METERS,
     color: '#4a2f78', weight: 2, dashArray: '5,4',
     fillColor: '#7d5bb5', fillOpacity: 0.25
-  }).addTo(map);
+  });
 
   c.bindTooltip(g.label, {
     permanent: true, direction: 'right', offset: [12, 0], className: 'map-label gw'
@@ -336,6 +346,60 @@ const gwMarkers = GROUNDWATER.map(g => {
   );
   return c;
 });
+
+// --- toggleable groups ----------------------------------------------------
+const ringsLayer   = L.layerGroup([fiveMile, threeMile]).addTo(map);
+const subjectLayer = L.layerGroup([leanderSprings]).addTo(map);
+const sitesLayer   = L.layerGroup(markers).addTo(map);
+const pumpageLayer = L.layerGroup(gwMarkers).addTo(map);
+
+const layerControl = L.control.layers(null, {
+  'Leander Springs': subjectLayer,
+  'Water use sites': sitesLayer,
+  'Groundwater pumpage': pumpageLayer,
+  '3 / 5 mile rings': ringsLayer
+}, { collapsed: false, position: 'topright' }).addTo(map);
+
+// --- aquifer extents ------------------------------------------------------
+// aquifers.json is optional: absent, the map is exactly what it was. Build it
+// from the TWDB Major Aquifers layer with scripts/build_aquifers.py.
+// All aquifers start switched off - they are broad washes, and the map's
+// argument is about the points on top of them.
+fetch('aquifers.json')
+  .then(r => r.ok ? r.json() : null)
+  .then(data => {
+    if (!data || !Array.isArray(data.aquifers) || !data.aquifers.length) return;
+    // Count the feature rows before adding any aquifer, so the divider lands in
+    // the right place even if a fifth group is added above.
+    const list = document.querySelector('.leaflet-control-layers-overlays');
+    const featureRows = list ? list.children.length : 0;
+    data.aquifers.forEach(a => {
+      const layer = L.geoJSON(a.geojson, {
+        pane: 'aquifers',
+        style: { color: a.color, weight: 1, opacity: 0.7,
+                 fillColor: a.color, fillOpacity: 0.20 }
+      });
+      layer.bindPopup(
+        `<h3>${esc(a.name)} Aquifer</h3>` +
+        '<div class="sub">TWDB mapped extent &middot; clipped to this map</div>' +
+        '<div style="font-size:12px;color:#444;margin:8px 0">' +
+          'Full mapped extent, outcrop and downdip together &mdash; where the aquifer ' +
+          'exists, not where it is being pumped. Outlines are simplified for display; ' +
+          'use the TWDB source for anything that turns on an exact boundary.' +
+        '</div>' +
+        '<div class="srcs"><strong>Source</strong><br>' +
+          '<a href="https://www.twdb.texas.gov/mapping/gisdata.asp" target="_blank" rel="noopener">TWDB &mdash; Major Aquifers GIS data</a>' +
+        '</div>',
+        { maxWidth: 300 }
+      );
+      layerControl.addOverlay(layer, `<i style="background:${a.color}"></i>${esc(a.name)}`);
+    });
+    if (list && featureRows) {
+      list.children[featureRows - 1].insertAdjacentHTML('afterend', '<b>Aquifer extents</b>');
+      list.insertAdjacentHTML('afterbegin', '<b>Map features</b>');
+    }
+  })
+  .catch(err => console.error('failed to load aquifers.json', err));
 
 // --- legend ---------------------------------------------------------------
 const legend = L.control({ position: 'bottomleft' });

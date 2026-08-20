@@ -8,7 +8,12 @@ GitHub Pages only serves static files — no Python runs at request time. So:
 
 - **`index.html`** — the whole UI. Leaflet + OpenStreetMap tiles, loaded from a CDN. No build step, no framework. Draws two radius rings around a fixed center point (`CENTER` at the top of the script): 3 mi in dark green, 5 mi in light green. Every site on the map is a JS literal in this file — `SITES` (red circles) and `GROUNDWATER` (dashed purple circles).
 - **`scripts/build_data.py`** — standard library only. Reads `data/points.csv`, writes `points.json`.
-- **`points.json`** — what the page fetches at load time. Committed, so Pages can serve it.
+- **`scripts/build_aquifers.py`** — standard library only. Trims a TWDB aquifer download into `aquifers.json`. See [Aquifer extents](#aquifer-extents).
+- **`points.json`**, **`aquifers.json`** — what the page fetches at load time. Committed, so Pages can serve them. Both are optional; the map still draws without either.
+
+Everything on the map is grouped into toggles in the top-right control: the four
+feature groups (Leander Springs, water use sites, groundwater pumpage, the rings)
+and one entry per aquifer extent.
 
 ## Adding points
 
@@ -105,6 +110,37 @@ a year countywide on top.
 Sources: [TWDB Detailed Groundwater Pumpage by County](https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage) ·
 [TWDB Historical Groundwater Pumpage](https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp) ·
 [Williamson County — why the county needs a GCD](https://www.wilcotx.gov/CivicAlerts.aspx?AID=42)
+
+### Aquifer extents
+
+Off by default — tick them in the top-right control. Each is the TWDB **mapped extent**,
+outcrop and downdip together: where the aquifer *exists*, not where anyone is pumping it.
+They draw in their own map pane beneath every ring, circle and label, so turning one on
+never hides a data point.
+
+Four are carried, the same four the figures above name: **Trinity** (the Leander Springs
+well and Liberty Hill), **Edwards (Balcones Fault Zone)** (Georgetown, Round Rock, Texas
+Crushed Stone, MM-North, Brushy Creek), **Edwards-Trinity (Plateau)**, and
+**Carrizo-Wilcox** (the Hutto reference).
+
+Building `aquifers.json` takes one manual download, because the source is far too large
+to fetch at page load — the statewide layer is tens of megabytes, and the trimmed result
+is a few dozen KB:
+
+1. Get **Major Aquifers** from [TWDB GIS Data](https://www.twdb.texas.gov/mapping/gisdata.asp) as GeoJSON.
+2. Save it as `data/aquifers_source.geojson` (gitignored).
+3. Run `python3 scripts/build_aquifers.py`, and commit the regenerated `aquifers.json`.
+
+The script clips to a box around Leander (`BBOX`), simplifies the outlines
+(`TOLERANCE`), and drops everything outside the four aquifers in `RULES` — all four
+constants are at the top of the file. It finds the aquifer-name attribute by looking
+rather than assuming, since TWDB has shipped it as `AQ_NAME`, `AQUIFER`, and
+`AQUIFER_NAME` across releases; it prints which field it used and every name it saw, so
+a mismatch is obvious. To have a layer start switched **on**, add it to the map in the
+`fetch('aquifers.json')` block in `index.html`.
+
+Simplified outlines are for display. Anything that turns on an exact boundary should go
+back to the TWDB source.
 
 ### Scale, for comparison
 
