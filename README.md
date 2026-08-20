@@ -15,7 +15,7 @@ Everything on the map is grouped into toggles in the top-right control: the four
 feature groups (Leander Springs, water use sites, groundwater pumpage, the rings)
 and one entry per aquifer extent.
 
-The 3 and 5 mile rings are context, not data. They draw in their own pane between the
+The 3 and 5 mile rings are context, not data, and are drawn in a light blue nothing else on the map uses. They draw in their own pane between the
 aquifer washes and the site circles, so nothing ever hides behind them, and each ring is
 two paths: an inert filled wash (`interactive: false`, so the square miles it covers never
 swallow a click meant for a site) plus a stroke-only outline that takes a hover and names
@@ -158,6 +158,22 @@ longitude −94.8:
 | Edwards-BFZ — downdip | 254 | 6.4% |
 | Carrizo-Wilcox — outcrop | 210 | 5.3% |
 | Carrizo-Wilcox — downdip | 2 | 0.0% |
+
+**Which part does the Leander Springs well sit in?** Point-testing the site against the
+polygons: it falls inside **Trinity — downdip** and outside the outcrop. That matches how the
+developer describes the well — *confined* sandstone under ~520 ft of shale, artesian. Outcrop
+is where an aquifer is unconfined and open to the sky; a confined artesian well is by
+definition not in it. Liberty Hill, 8 mi northwest, *is* in the Trinity outcrop — same
+aquifer, different part. Georgetown falls inside both Edwards-BFZ downdip and Trinity downdip,
+which is stacked geology behaving exactly as expected.
+
+One caveat: TWDB maps the Trinity as a single unit, while the well produces from the **Middle**
+Trinity specifically. The polygon tells you where the aquifer is, not which subunit is screened.
+
+Outcrop draws in the aquifer's full hue; downdip in the same hue mixed 55% toward white, with
+a dashed edge and a striped swatch in the layer control. Sharing one hue at two opacities made
+the pair impossible to tell apart, especially in the control where both swatches sat on white
+and rendered as the same block.
 
 Drawn as one merged Trinity layer it covered **87% of the map**, which buried the
 distinction the pumpage figures rest on. Ticking the two *outcrops* together is the view

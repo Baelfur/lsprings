@@ -134,8 +134,8 @@ function ring(miles, color, fillOpacity) {
 }
 
 // Larger ring first so the darker 3 mi wash lays over the 5 mi one.
-const fiveMileRing  = ring(5, '#7fce8b', 0.18);
-const threeMileRing = ring(3, '#1b6b3a', 0.25);
+const fiveMileRing  = ring(5, '#7fc9e8', 0.16);
+const threeMileRing = ring(3, '#1f7fa8', 0.22);
 
 // Kept for fitBounds, which only needs one shape's extent.
 const fiveMile = fiveMileRing.wash;
@@ -286,7 +286,20 @@ leanderSprings.bindPopup(
     '<dt>Drawdown</dt><dd>3.2 ft @ 1 yr, 4.3 ft @ 10 yr, 5 ft @ 30 yr</dd>' +
     '<dt></dt><dd>projected at a one-mile perimeter</dd>' +
     '<dt>Loop</dt><dd>Closed, recovers up to 80%</dd>' +
+    '<dt>Sits in</dt><dd>Trinity <strong>downdip</strong>, not outcrop</dd>' +
   '</dl>' +
+  '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
+    '<strong>Which aquifer shape applies:</strong> point-tested against the TWDB ' +
+    'polygons, this site falls inside Trinity <em>downdip</em> &mdash; the buried ' +
+    'part &mdash; and outside the outcrop. That matches how the developer describes ' +
+    'the well: <em>confined</em> sandstone under ~520 ft of shale, artesian. Outcrop ' +
+    'is where an aquifer is unconfined and open to the sky; a confined artesian well ' +
+    'is by definition not in it. Liberty Hill, 8 mi northwest, <em>is</em> in the ' +
+    'Trinity outcrop &mdash; same aquifer, different part of it. One caveat: TWDB maps ' +
+    'the Trinity as a single unit, while the well produces from the Middle Trinity ' +
+    'specifically, so the polygon answers where the aquifer is, not which subunit is ' +
+    'screened.' +
+  '</div>' +
   '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
     'Figures are the developer&rsquo;s, from the project FAQ, which supersede the ' +
     '8&ndash;9 AF and &ldquo;Lower Trinity&rdquo; numbers reported in news coverage. ' +
@@ -431,11 +444,12 @@ fetch('aquifers.json')
       // Downdip is the same aquifer continuing underneath younger rock, so it
       // gets a fainter wash and a dashed edge -- present, but not competing.
       const down = a.part === 'downdip';
+      const shade = down ? lighten(a.color, 0.55) : a.color;
       const layer = L.geoJSON(a.geojson, {
         pane: 'aquifers',
-        style: { color: a.color, weight: 1, opacity: down ? 0.5 : 0.75,
-                 dashArray: down ? '4,3' : null,
-                 fillColor: a.color, fillOpacity: down ? 0.08 : 0.22 }
+        style: { color: shade, weight: down ? 1.5 : 1, opacity: down ? 0.9 : 0.75,
+                 dashArray: down ? '5,4' : null,
+                 fillColor: shade, fillOpacity: down ? 0.22 : 0.30 }
       });
       layer.bindPopup(
         `<h3>${esc(a.name)}</h3>` +
@@ -456,7 +470,13 @@ fetch('aquifers.json')
         '</div>',
         { maxWidth: 300 }
       );
-      layerControl.addOverlay(layer, `<i style="background:${a.color}"></i>${esc(a.name)}`);
+      // Striping the downdip swatch says "same aquifer, buried" in a way two
+      // flat blocks of one hue never did.
+      const swatch = down
+        ? `background:repeating-linear-gradient(45deg,${shade} 0 3px,#fff 3px 5px);` +
+          `border:1px solid ${a.color}`
+        : `background:${shade}`;
+      layerControl.addOverlay(layer, `<i style="${swatch}"></i>${esc(a.name)}`);
     });
     if (list && featureRows) {
       list.children[featureRows - 1].insertAdjacentHTML('afterend', '<b>Aquifer extents</b>');
@@ -465,6 +485,19 @@ fetch('aquifers.json')
   })
   .catch(err => console.error('failed to load aquifers.json', err));
 
+
+
+// Mix a hex colour toward white. Outcrop and downdip share a hue so the aquifer
+// stays identifiable, but sharing a hue at two opacities made them impossible to
+// tell apart -- especially in the layer control, where the swatches sit on white
+// and both rendered as the same block. Lightening the actual colour separates
+// them on the map and in the swatch.
+function lighten(hex, amount) {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = c => Math.round(c + (255 - c) * amount);
+  const r = mix(n >> 16), g = mix((n >> 8) & 255), b = mix(n & 255);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
 
 // --- scale key ------------------------------------------------------------
 // Built from the same objects the map draws, so a figure can never be right in
@@ -575,7 +608,7 @@ legend.onAdd = function () {
     '<i style="background:#2b7fd4"></i>Leander Springs &mdash; developer est.<br>' +
     '<i style="background:#d1502f"></i>Reported / estimated user<br>' +
     '<i style="background:#7d5bb5;border:1px dashed #4a2f78"></i>Verified groundwater pumpage (2024)<br>' +
-    '<i style="background:#7fce8b"></i>3 / 5 mile rings';
+    '<i style="background:#7fc9e8;border:1px solid #1f7fa8"></i>3 / 5 mile rings';
   return d;
 };
 legend.addTo(map);
