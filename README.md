@@ -228,11 +228,42 @@ Fill still carries provenance (orange = reported/estimated user, purple = verifi
 blue = Leander Springs) and a dashed ring still means system-wide rather than one wellhead.
 Source, provenance and scope are three independent things, so they get three channels.
 
-Each popup also carries a **button that draws the aquifer that user pumps** — "Show Trinity
-extent" on Liberty Hill and Leander Springs, "Show Edwards-BFZ extent" on Georgetown, Round
-Rock, Texas Crushed Stone, MM-North and Brushy Creek. It turns on both parts of that aquifer,
-outcrop and downdip, and stays in sync with the layer control in both directions: toggling
-from the control relabels any open button, and vice versa.
+Each popup also carries a **button that draws the exact aquifer shape that user pumps**. Every
+site was point-tested against the polygons, and each sits in exactly one part — so the button
+names and toggles that one, not the whole aquifer:
+
+| User | Draws | Button |
+|---|---|---|
+| Leander Springs | Trinity | Show Trinity **downdip** |
+| Liberty Hill | Trinity | Show Trinity **outcrop** |
+| Georgetown · Round Rock · Texas Crushed Stone | Edwards-BFZ | Show Edwards-BFZ **downdip** |
+| MM-North Quarry · Brushy Creek MUD | Edwards-BFZ | Show Edwards-BFZ **outcrop** |
+
+It stays in sync with the layer control both ways: toggling from the control relabels any open
+button, and vice versa.
+
+### Private wells
+
+The same TWDB report carries "non-surveyed estimate" rows — its own model of pumping by wells
+nobody meters: domestic, livestock and small irrigation. Williamson County has no groundwater
+conservation district, so none of it is permitted or measured either. County-wide, 2024:
+
+| Aquifer | Private wells | vs the named users on this map |
+|---|---:|---|
+| **Trinity** | **426 AF/yr** | **2.15× the 198 AF the two named Trinity users draw** |
+| Edwards-BFZ | 650 AF/yr | 0.06× the 11,123 AF the five named users draw |
+| Carrizo-Wilcox | 30 AF/yr | — |
+| Other / Edwards-Trinity | 30 AF/yr | — |
+| **County total** | **1,136 AF/yr** | |
+
+These appear in each aquifer's own popup. The Trinity row is the one that matters here: on the
+aquifer Leander Springs pumps, **unmetered private wells draw more than twice what every named
+user on this map draws combined**, and that is exactly the water the developer's hydrogeology
+predicts no impact on. Counting them in, the lagoon is 1.6% of all known Trinity pumping.
+
+The Edwards-BFZ contrast is just as sharp in the other direction: private wells are a rounding
+error next to Georgetown and Round Rock. The Trinity is the aquifer where nobody large is
+pumping and everybody small is.
 
 Users with no aquifer get a chip instead of a button — there is no extent to draw for
 reclaimed effluent or a city main, so Cimarron Hills and Crystal Falls read "Supplied by:

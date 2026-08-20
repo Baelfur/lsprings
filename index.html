@@ -178,6 +178,17 @@ const SOURCE = {
 const srcOf = k => SOURCE[k] || SOURCE.unknown;
 
 
+
+// TWDB's "non-surveyed estimate" rows: its own estimate of pumping by wells
+// nobody meters -- domestic, livestock and small irrigation. Williamson County
+// has no groundwater conservation district, so none of it is permitted either.
+// County-wide totals, 2024, in acre-feet.
+const PRIVATE_WELLS = {
+  'trinity':        { af: 426, gal: '138,699,194' },
+  'edwards-bfz':    { af: 650, gal: '211,675,677' },
+  'carrizo-wilcox': { af: 30,  gal: '9,854,908' }
+};
+
 // --- popup -> aquifer linkage ---------------------------------------------
 // Registered as the aquifer layers are built, so a popup opened before
 // aquifers.json lands still finds them later. Popup markup is a string, so the
@@ -186,39 +197,47 @@ const srcOf = k => SOURCE[k] || SOURCE.unknown;
 const aquiferLayers = {};
 const GROUNDWATER_SOURCES = ['edwards-bfz', 'trinity', 'carrizo-wilcox'];
 
-const aquiferShown = k => Object.values(aquiferLayers[k] || {}).some(l => map.hasLayer(l));
+// Each user was point-tested against the polygons and sits in exactly one part
+// of its own aquifer, so the button draws that part alone. Toggling outcrop and
+// downdip together showed a shape the well is not in.
+const partLayers = (k, part) => {
+  const g = aquiferLayers[k] || {};
+  return part ? (g[part] ? [g[part]] : []) : Object.values(g);
+};
+const aquiferShown = (k, part) => partLayers(k, part).some(l => map.hasLayer(l));
 
-function toggleAquifer(k) {
-  const parts = Object.values(aquiferLayers[k] || {});
-  if (!parts.length) return;
-  const on = aquiferShown(k);
-  parts.forEach(l => (on ? map.removeLayer(l) : map.addLayer(l)));
+function toggleAquifer(k, part) {
+  const layers = partLayers(k, part);
+  if (!layers.length) return;
+  const on = aquiferShown(k, part);
+  layers.forEach(l => (on ? map.removeLayer(l) : map.addLayer(l)));
 }
 
 function refreshAqBtn(b) {
-  const k = b.dataset.aquifer;
-  if (!Object.keys(aquiferLayers[k] || {}).length) {
+  const k = b.dataset.aquifer, part = b.dataset.part || '';
+  if (!partLayers(k, part).length) {
     b.disabled = true;
     b.textContent = srcOf(k).label + ' \u2014 extent not loaded';
     return;
   }
-  const on = aquiferShown(k);
+  const on = aquiferShown(k, part);
   b.disabled = false;
   b.classList.toggle('on', on);
-  b.textContent = (on ? 'Hide ' : 'Show ') + srcOf(k).label + ' extent';
+  b.textContent = (on ? 'Hide ' : 'Show ') + srcOf(k).label +
+                  (part ? ' ' + part : ' extent');
 }
 
 // One row per popup: what supplies this user, and for a groundwater source a
 // button that draws that aquifer. Non-groundwater users get the chip only --
 // there is no extent to show for reclaimed effluent or a city main.
-function sourceControl(key) {
+function sourceControl(key, part) {
   const s = srcOf(key);
   if (!GROUNDWATER_SOURCES.includes(key)) {
     return `<div class="aq-note"><i style="background:${s.color}"></i>` +
            `Supplied by: ${esc(s.label)}</div>`;
   }
-  return `<button class="aq-btn" data-aquifer="${esc(key)}" style="--c:${s.color}">` +
-         `Show ${esc(s.label)} extent</button>`;
+  return `<button class="aq-btn" data-aquifer="${esc(key)}" data-part="${esc(part || '')}" ` +
+         `style="--c:${s.color}">Show ${esc(s.label)} ${esc(part || 'extent')}</button>`;
 }
 
 map.on('popupopen', e => {
@@ -229,7 +248,7 @@ map.on('popupopen', e => {
 document.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('.aq-btn');
   if (!b || b.disabled) return;
-  toggleAquifer(b.dataset.aquifer);
+  toggleAquifer(b.dataset.aquifer, b.dataset.part || '');
   refreshAqBtn(b);
 });
 
@@ -241,7 +260,7 @@ map.on('overlayadd overlayremove', () => {
 // --- water use sites ------------------------------------------------------
 const SITES = [
   {
-    name: 'Texas Crushed Stone', short: 'Texas Crushed Stone', src: 'edwards-bfz', af: 1343.5,
+    name: 'Texas Crushed Stone', short: 'Texas Crushed Stone', src: 'edwards-bfz', part: 'downdip', af: 1343.5,
     sub: 'Georgetown Quarry &middot; TCEQ RN102016482',
     lat: 30.576111, lon: -97.696666,
     label: 'Texas Crushed Stone<br>438M gal/yr',
@@ -412,7 +431,7 @@ leanderSprings.bindPopup(
     'by the density-cut claim, 1,200 apartments draw ~240,000 gal/day of <em>city</em> ' +
     'water &mdash; about 26&times; the well.' +
   '</div>' +
-  sourceControl('trinity') +
+  sourceControl('trinity', 'downdip') +
   '<div class="srcs"><strong>Sources</strong><br>' +
     '<a href="https://leandersprings.us/" target="_blank" rel="noopener">leandersprings.us &mdash; project FAQ (developer; depth, aquifer, pump test, drawdown)</a>' +
     '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/" target="_blank" rel="noopener">Community Impact &mdash; P&amp;Z approval, Jun 2026</a>' +
@@ -444,7 +463,7 @@ const markers = SITES.map(s => {
     `<span class="badge ${s.quality}">${s.quality}</span>` +
     `<dl style="margin-top:8px">${rows}</dl>` +
     `<div style="font-size:12px;color:#444;margin-bottom:8px">${s.note}</div>` +
-    sourceControl(s.src) +
+    sourceControl(s.src, s.part) +
     `<div class="srcs"><strong>Sources</strong><br>${srcs}</div>`,
     { maxWidth: 320 }
   );
@@ -459,19 +478,19 @@ const markers = SITES.map(s => {
 // Municipal rows are SYSTEM-WIDE totals across multiple well fields; the point
 // is a representative location for the utility, NOT a single wellhead.
 const GROUNDWATER = [
-  { name: 'City of Georgetown', short: 'Georgetown', src: 'edwards-bfz', lat: 30.63266, lon: -97.67722, af: 8244,
+  { name: 'City of Georgetown', short: 'Georgetown', src: 'edwards-bfz', part: 'downdip', lat: 30.63266, lon: -97.67722, af: 8244,
     gal: '2,686,427,600', wells: 4, aq: 'Edwards-BFZ', system: true,
     label: 'Georgetown (municipal)<br>2,686M gal/yr' },
-  { name: 'City of Round Rock', short: 'Round Rock', src: 'edwards-bfz', lat: 30.50826, lon: -97.67891, af: 1450,
+  { name: 'City of Round Rock', short: 'Round Rock', src: 'edwards-bfz', part: 'downdip', lat: 30.50826, lon: -97.67891, af: 1450,
     gal: '472,448,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Round Rock (municipal)<br>472M gal/yr' },
-  { name: 'City of Liberty Hill', short: 'Liberty Hill', src: 'trinity', lat: 30.66490, lon: -97.92250, af: 188,
+  { name: 'City of Liberty Hill', short: 'Liberty Hill', src: 'trinity', part: 'outcrop', lat: 30.66490, lon: -97.92250, af: 188,
     gal: '61,359,184', wells: 4, aq: 'Trinity', system: true,
     label: 'Liberty Hill (municipal)<br>61M gal/yr &middot; Trinity' },
-  { name: 'MM-North Austin Quarry', short: 'MM-North Quarry', src: 'edwards-bfz', lat: 30.45500, lon: -97.79500, af: 74,
+  { name: 'MM-North Austin Quarry', short: 'MM-North Quarry', src: 'edwards-bfz', part: 'outcrop', lat: 30.45500, lon: -97.79500, af: 74,
     gal: '24,083,600', wells: 1, aq: 'Edwards-BFZ', system: false,
     label: 'MM-North Austin Quarry<br>24M gal/yr' },
-  { name: 'Brushy Creek MUD', short: 'Brushy Creek MUD', src: 'edwards-bfz', lat: 30.51270, lon: -97.76140, af: 11.5,
+  { name: 'Brushy Creek MUD', short: 'Brushy Creek MUD', src: 'edwards-bfz', part: 'outcrop', lat: 30.51270, lon: -97.76140, af: 11.5,
     gal: '3,747,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Brushy Creek MUD<br>3.7M gal/yr' }
 ];
@@ -506,7 +525,7 @@ const gwMarkers = GROUNDWATER.map(g => {
           'service area, not a well site.'
         : 'Single reporting facility.') +
     '</div>' +
-    sourceControl(g.src) +
+    sourceControl(g.src, g.part) +
     '<div class="srcs"><strong>Source</strong><br>' +
       '<a href="https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage" target="_blank" rel="noopener">TWDB Water Use Survey &mdash; Detailed Groundwater Pumpage by County (Williamson, 2024)</a>' +
       '<a href="https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp" target="_blank" rel="noopener">TWDB Historical Groundwater Pumpage</a>' +
@@ -546,6 +565,7 @@ fetch('aquifers.json')
       // Outcrop reads as the solid one because it is the part at the surface.
       // Downdip is the same aquifer continuing underneath younger rock, so it
       // gets a fainter wash and a dashed edge -- present, but not competing.
+      const base = a.key.replace(/-(outcrop|downdip)$/, '');
       const down = a.part === 'downdip';
       const shade = down ? lighten(a.color, 0.30) : a.color;
       const layer = L.geoJSON(a.geojson, {
@@ -554,6 +574,7 @@ fetch('aquifers.json')
                  opacity: 0.9, dashArray: down ? '6,4' : null,
                  fillColor: shade, fillOpacity: down ? 0.30 : 0.34 }
       });
+      const priv = PRIVATE_WELLS[base];
       layer.bindPopup(
         `<h3>${esc(a.name)}</h3>` +
         `<div class="sub">TWDB mapped extent &middot; ${esc(a.part)} &middot; clipped to this map</div>` +
@@ -568,6 +589,18 @@ fetch('aquifers.json')
           'are simplified for display; use the TWDB source for anything that turns on an ' +
           'exact boundary.' +
         '</div>' +
+        (priv
+          ? '<dl style="margin-bottom:8px">' +
+              `<dt>Private wells</dt><dd>${priv.af.toLocaleString()} acre-feet/yr</dd>` +
+              `<dt>Gallons</dt><dd>${priv.gal}</dd>` +
+            '</dl>' +
+            '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
+              'TWDB&rsquo;s estimate of pumping by <strong>unmetered</strong> domestic, ' +
+              'livestock and small irrigation wells on this aquifer, county-wide. ' +
+              'Williamson County has no groundwater conservation district, so none of it ' +
+              'is permitted or measured &mdash; it is modelled, not counted.' +
+            '</div>'
+          : '') +
         '<div class="srcs"><strong>Source</strong><br>' +
           '<a href="https://www.twdb.texas.gov/mapping/gisdata.asp" target="_blank" rel="noopener">TWDB &mdash; Major Aquifers GIS data</a>' +
         '</div>',
@@ -579,7 +612,6 @@ fetch('aquifers.json')
         ? `background:repeating-linear-gradient(45deg,${shade} 0 3px,#fff 3px 6px);` +
           `border:1px solid ${a.color}`
         : `background:${shade}`;
-      const base = a.key.replace(/-(outcrop|downdip)$/, '');
       (aquiferLayers[base] = aquiferLayers[base] || {})[a.part] = layer;
       layerControl.addOverlay(layer, `<i style="${swatch}"></i>${esc(a.name)}`);
     });
