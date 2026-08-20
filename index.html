@@ -58,9 +58,10 @@
 const CENTER = [30.580360532644164, -97.83738257327695];
 const MILE_IN_METERS = 1609.344;
 
-// Midpoint of the developer's 8-9 AF/yr lagoon evaporation estimate. Every
-// "vs lagoon" multiple on the map is measured against this one number.
-const LAGOON_AF = 8.5;
+// The developer's own 9,072 gal/day for the lagoon, in acre-feet. Every "vs
+// lagoon" multiple on the map is measured against this one number. Their FAQ
+// supersedes the 8-9 AF/yr evaporation figure that news coverage reported.
+const LAGOON_AF = 10.16;
 
 // Small multiples keep a decimal - rounding 1.35x to "1x" reads as parity.
 const vsLagoon = af => {
@@ -242,7 +243,7 @@ const leanderSprings = L.circleMarker(CENTER, {
   fillColor: '#2b7fd4', fillOpacity: 0.95
 });
 
-leanderSprings.bindTooltip('Leander Springs<br>~2.8M gal/yr (lagoon)', {
+leanderSprings.bindTooltip('Leander Springs<br>~3.3M gal/yr (lagoon)', {
   permanent: true, direction: 'left', offset: [-14, 0], className: 'map-label subject'
 });
 
@@ -251,26 +252,35 @@ leanderSprings.bindPopup(
   '<div class="sub">77.9-acre mixed-use PUD &middot; 4-acre Crystal Lagoon</div>' +
   '<span class="badge developer">developer estimate</span>' +
   '<dl style="margin-top:8px">' +
-    '<dt>Lagoon</dt><dd>8&ndash;9 acre-feet/yr (evaporation)</dd>' +
-    '<dt>Gallons</dt><dd>~2.6&ndash;2.9 million/yr</dd>' +
-    '<dt>Per day</dt><dd>~7,600 gal average</dd>' +
-    '<dt>Source</dt><dd>On-site 800 ft well, Lower Trinity Aquifer</dd>' +
-    '<dt>Backup</dt><dd>City of Leander, up to 200,000 gal/day,</dd>' +
-    '<dt></dt><dd>Dec&ndash;Feb off-peak only</dd>' +
-    '<dt>Loop</dt><dd>Closed, recycles 80&ndash;95%</dd>' +
+    '<dt>Lagoon</dt><dd>9,072 gal/day &mdash; 10.2 acre-feet/yr</dd>' +
+    '<dt>Gallons</dt><dd>~3.31 million/yr</dd>' +
+    '<dt>Source</dt><dd>On-site well, <strong>Middle Trinity</strong></dd>' +
+    '<dt>Screened</dt><dd>527&ndash;737 ft, confined sandstone</dd>' +
+    '<dt>Aquitard</dt><dd>~520 ft of Gray Shale above</dd>' +
+    '<dt>Pump test</dt><dd>95 gpm for 48 h; recovery in ~4 h</dd>' +
+    '<dt>Drawdown</dt><dd>3.2 ft @ 1 yr, 4.3 ft @ 10 yr, 5 ft @ 30 yr</dd>' +
+    '<dt></dt><dd>projected at a one-mile perimeter</dd>' +
+    '<dt>Loop</dt><dd>Closed, recovers up to 80%</dd>' +
   '</dl>' +
   '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
-    'The 8&ndash;9 AF figure is <strong>lagoon evaporation only</strong>, not the ' +
-    'development&rsquo;s total water demand. It works out to ~25 in/yr over 4 acres, ' +
-    'at or just below ordinary Central Texas net evaporation (~26&ndash;36 in/yr) ' +
-    '&mdash; plausible, but not a conservative number. The city backup allowance ' +
-    '(200,000 gal/day for ~90 days = ~55 AF) is ~6&times; the claimed annual loss.' +
+    'Figures are the developer&rsquo;s, from the project FAQ, which supersede the ' +
+    '8&ndash;9 AF and &ldquo;Lower Trinity&rdquo; numbers reported in news coverage. ' +
+    'The FAQ states the Lower Trinity zone was tested, found high in dissolved solids, ' +
+    'and <strong>sealed with concrete</strong> &mdash; production is Middle Trinity only. ' +
+    'The site also carries an internal inconsistency: it gives make-up demand as ' +
+    '&ldquo;approximately 20 gpm annually,&rdquo; which read as a continuous rate is ' +
+    '28,800 gal/day (32 AF/yr), 3.2&times; the 9,072 gal/day it states elsewhere. The ' +
+    '9,072 figure is the one its own pump-test arithmetic supports (95 gpm called ' +
+    '&ldquo;about 15&times;&rdquo; the long-term average implies 6.3 gpm = 9,120 gal/day). ' +
+    'And the lagoon is not the development&rsquo;s water: at the 200 gal/day/unit implied ' +
+    'by the density-cut claim, 1,200 apartments draw ~240,000 gal/day of <em>city</em> ' +
+    'water &mdash; about 26&times; the well.' +
   '</div>' +
   '<div class="srcs"><strong>Sources</strong><br>' +
-    '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/" target="_blank" rel="noopener">Community Impact &mdash; P&amp;Z approval, Jun 2026 (8&ndash;9 AF, Lower Trinity well)</a>' +
-    '<a href="https://communityimpact.com/austin/cedar-park-leander/development/2021/01/22/council-oks-1b-leander-springs-development-addresses-water-concerns-in-agreement/" target="_blank" rel="noopener">Community Impact &mdash; council water agreement, Jan 2021 (200,000 gal/day backup)</a>' +
-    '<a href="https://www.crystal-lagoons.com/leander-city-texas-reveals-4-acre-amenity-by-crystal-lagoons-to-anchor-1b-mixed-use-development/" target="_blank" rel="noopener">Crystal Lagoons &mdash; project announcement</a>' +
-    '<a href="https://leandersprings.us/" target="_blank" rel="noopener">leandersprings.us</a>' +
+    '<a href="https://leandersprings.us/" target="_blank" rel="noopener">leandersprings.us &mdash; project FAQ (developer; depth, aquifer, pump test, drawdown)</a>' +
+    '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/" target="_blank" rel="noopener">Community Impact &mdash; P&amp;Z approval, Jun 2026</a>' +
+    '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2025/08/22/leander-city-council-votes-down-leander-springs-pud-amendment-request/" target="_blank" rel="noopener">Community Impact &mdash; council denial, Aug 2025</a>' +
+    '<a href="https://communityimpact.com/austin/cedar-park-leander/development/2021/01/22/council-oks-1b-leander-springs-development-addresses-water-concerns-in-agreement/" target="_blank" rel="noopener">Community Impact &mdash; council water agreement, Jan 2021</a>' +
   '</div>',
   { maxWidth: 340 }
 );

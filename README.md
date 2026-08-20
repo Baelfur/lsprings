@@ -56,31 +56,46 @@ are measured from it. Everything else on the map is a large water user around it
 
 ### Leander Springs — developer estimate
 
+Figures below come from the **project's own FAQ** at [leandersprings.us](https://leandersprings.us/)
+(the developer's advocacy site). They supersede the numbers in news coverage, which had both
+the aquifer and the volume wrong.
+
 | | |
 |---|---|
-| Lagoon evaporation | **8–9 acre-feet/yr** |
-| Approx. | 2.6–2.9 million gal/yr (~7,600 gal/day) |
-| Source | On-site 800 ft well, Lower Trinity Aquifer |
-| City backup | up to 200,000 gal/day, Dec–Feb off-peak only |
-| Loop | Closed, recycles 80–95% |
+| Lagoon make-up | **9,072 gal/day — 10.2 acre-feet/yr** (~3.31M gal) |
+| Source | On-site well, **Middle Trinity** confined sandstone |
+| Screened interval | 527–737 ft, under ~520 ft of Gray Shale |
+| Pump test | 95 gpm for 48 h; static recovery in ~4 h |
+| Projected drawdown @ 1 mi | 3.2 ft @ 1 yr · 4.3 ft @ 10 yr · 5 ft @ 30 yr |
+| Loop | Closed, recovers up to 80% |
 
-77.9-acre mixed-use PUD anchored by a 4-acre Crystal Lagoon. Amended PUD approved by
-Planning & Zoning 5-1 on June 25, 2026; advancing to City Council. Lagoon is now
-classified "non-essential" and can be withheld during severe drought.
+77.9-acre mixed-use PUD anchored by a 4-acre Crystal Lagoon, 1,200 residential units,
+275-room hotel. Council **denied** the PUD amendment in August 2025; an amended version
+passed Planning & Zoning 5-1 on June 25, 2026 and returns to Council. The lagoon is
+classified "non-essential," withholdable during severe drought.
 
-Two caveats the headline number hides:
+**Corrections against earlier reporting.** The FAQ states the well does **not** draw from the
+Lower Trinity: that zone was tested, found high in dissolved solids, and *sealed with
+concrete*. Production is Middle Trinity only, at 527–737 ft — not the "Lower Trinity" or
+"800-foot" well reported in June 2026. Volume is 10.2 AF/yr, ~20% above the 8–9 AF
+evaporation figure that circulated.
 
-- **8–9 AF is lagoon evaporation only**, not the development's total demand. 1,200
-  apartments at ~150 gpd/unit is ~202 AF/yr on its own — roughly 24× the lagoon figure,
-  before hotel, retail, and office. *(That multiplier is our arithmetic, not from their studies.)*
-- **~25 in/yr over 4 acres** is at or just below ordinary Central Texas net evaporation
-  (~26–36 in/yr), before crediting the claimed 50–80% evaporation reduction from VVater's technology. Plausible, but
-  not conservative. The city backup allowance (200,000 gal/day × ~90 days ≈ 55 AF) is
-  ~6× the claimed annual loss.
+**An internal inconsistency in their own materials.** The FAQ gives modeled make-up demand as
+"approximately 20 gallons per minute annually." Read as a continuous rate that is 28,800
+gal/day — **32 AF/yr, 3.2× the 9,072 gal/day stated elsewhere on the same page**. The 9,072
+figure is the one their pump-test arithmetic supports: 95 gpm described as "about 15×" the
+long-term average implies 6.3 gpm ≈ 9,120 gal/day. Against 20 gpm the same ratio would be
+4.75×, not 15×. We use 9,072 gal/day and flag the gap rather than picking the larger number.
+The page also carries a blanket caveat that data "is being reviewed and adjusted."
 
-Sources: [Community Impact, Jun 2026](https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/) ·
-[Community Impact, Jan 2021 water agreement](https://communityimpact.com/austin/cedar-park-leander/development/2021/01/22/council-oks-1b-leander-springs-development-addresses-water-concerns-in-agreement/) ·
-[Crystal Lagoons](https://www.crystal-lagoons.com/leander-city-texas-reveals-4-acre-amenity-by-crystal-lagoons-to-anchor-1b-mixed-use-development/)
+**The lagoon still is not the development's water.** Their density-cut claim — dropping 400
+units "saving roughly 80,000 gallons of city water per day" — implies **200 gal/day/unit**. The
+1,200 remaining units therefore draw ~240,000 gal/day of *city* water, about **269 AF/yr, or
+26× the lagoon well**, before hotel, retail and office. The lagoon is the small half of this
+project's water story, and it is the half that does not touch municipal supply.
+
+For context, the FAQ's own comparison for the same 4 acres: apartments 16,000–30,000 gal/day
+(18–34 AF/yr), commercial retail 18,000–25,000 (20–28 AF/yr), lagoon 9,072 (10 AF/yr).
 
 ### Verified groundwater withdrawals within ~15 mi
 
@@ -186,58 +201,18 @@ back to the TWDB source.
 
 ### Scale, for comparison
 
+Multiples are against the lagoon's 10.2 AF/yr.
+
 | Site | AF/yr | vs lagoon |
 |---|---|---|
-| Texas Crushed Stone | 1,343.5 (reported, 2024) | 158× |
-| Twin Creeks | ~189 (est) | 22× |
-| Crystal Falls | ~180 (est) | 21× |
-| Cimarron Hills | ~162 (est) | 19× |
-| **Leander Springs lagoon** | **8.5 (developer)** | 1× |
-
-Four water-use sites, each drawn as a **half-mile red circle** with a label and a popup
-carrying the figures and source links.
-
-### Texas Crushed Stone — Georgetown Quarry
-
-30.576111, -97.696666 · TCEQ RN102016482 · **reported figure**
-
-| | |
-|---|---|
-| Total | 1,343.5 acre-feet (2024) |
-| Approx. | 438 million gal/yr (~1.20M/day) |
-| Source | Groundwater, Edwards-BFZ Aquifer |
-| Wells | 1 reported (2024) |
-| 2019 | 1,106.82 AF — up 21% since |
-
-The 2019 mining survey broke that year down as 1,105.64 AF groundwater (99.9%) and
-1.17 AF surface water — ~85% of all aggregate-mining water use in Williamson County
-(county total 1,308 AF).
-
-Sources: [TWDB/TCEQ Aggregate Mining Water Use App. III](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF) ·
-[App. IV](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF) ·
-[USGS site](https://waterdata.usgs.gov/monitoring-location/USGS-948491085135000/)
-
-### Golf courses — estimated volumes
-
-None of the three publish a facility-level figure. Each is estimated the same way:
-course polygon from OpenStreetMap → irrigated turf → × ~1.8 AF/acre, where the rate is
-derived from Central Texas ET (ETo ~62 in × Kc 0.60) less effective rainfall, at 75%
-irrigation efficiency. Because the method is identical and all three are 18-hole courses,
-the results cluster — the spread between them is noise, not signal.
-
-| Course | Polygon | Turf | Est. AF/yr | Est. gal/yr | Water source |
-|---|---|---|---|---|---|
-| [Cimarron Hills](https://www.openstreetmap.org/way/104049185) (Georgetown) | 131 ac | ~90 ac | ~162 | ~53M | Reclaimed — Georgetown ✅ |
-| [Crystal Falls](https://www.openstreetmap.org/relation/7363676) (Leander) | 155 ac | ~100 ac | ~180 | ~59M | Reclaimed — Travisso WRP ⚠️ |
-| [Twin Creeks](https://www.openstreetmap.org/relation/3203627) (Cedar Park) | 247 ac | ~105 ac | ~189 | ~62M | Not documented ❌ |
-
-✅ documented and named · ⚠️ documented but course not named explicitly · ❌ unknown
-
-Combined, the three courses come to ~531 AF/yr — about **40% of the quarry alone**.
-
-Sources: [Georgetown Water Resources FAQ](https://georgetowntexas.gov/utilities/water/resources/faqs/index.php) ·
-[Leander Water & Wastewater](https://www.leandertx.gov/506/Water-Wastewater) ·
-[Leander Golf Course directory](https://www.leandertx.gov/Directory.aspx?did=71) ·
-[Cedar Park Water Conservation Plan](https://ecode360.com/38630314) ·
-[GCSAA Phase III water report](https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf) ·
-[TWDB BMP 5.2](https://www.twdb.texas.gov/conservation/BMPs/Mun/doc/5.2.pdf)
+| City of Georgetown | 8,244 (reported, 2024) | 812× |
+| City of Round Rock | 1,450 (reported, 2024) | 143× |
+| Texas Crushed Stone | 1,343.5 (reported, 2024) | 132× |
+| Leander Springs, 1,200 units | ~269 (developer-implied) | 26× |
+| Twin Creeks | ~189 (est) | 19× |
+| City of Liberty Hill | 188 (reported, 2024) | 19× |
+| Crystal Falls | ~180 (est) | 18× |
+| Cimarron Hills | ~162 (est) | 16× |
+| MM-North Austin Quarry | 74 (reported, 2024) | 7× |
+| Brushy Creek MUD | 11.5 (reported, 2024) | 1.1× |
+| **Leander Springs lagoon** | **10.2 (developer)** | 1× |
