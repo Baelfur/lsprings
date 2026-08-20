@@ -56,6 +56,23 @@
   .scale-key .totals div { display: flex; align-items: center; gap: 5px; }
   .scale-key .totals i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
   .scale-key .totals .v { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .aq-btn {
+    font: 600 12px/1 system-ui, sans-serif; cursor: pointer;
+    padding: 6px 9px; margin-bottom: 8px; width: 100%;
+    border: 1px solid var(--c); border-radius: 3px;
+    background: #fff; color: var(--c); text-align: left;
+  }
+  .aq-btn::before {
+    content: ''; display: inline-block; width: 9px; height: 9px; border-radius: 2px;
+    background: var(--c); margin-right: 6px; vertical-align: -1px;
+  }
+  .aq-btn.on { background: var(--c); color: #fff; }
+  .aq-btn.on::before { background: #fff; }
+  .aq-btn:disabled { border-color: #ccc; color: #888; cursor: default; }
+  .aq-btn:disabled::before { background: #ccc; }
+  .aq-note { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .aq-note i { width: 9px; height: 9px; border-radius: 2px; display: inline-block;
+               margin-right: 5px; vertical-align: -1px; }
   .scale-key td.af  { text-align: right; font-variant-numeric: tabular-nums;
                       padding-right: 5px; white-space: nowrap; }
   .scale-key td.x   { text-align: right; color: #666;
@@ -159,6 +176,67 @@ const SOURCE = {
   'unknown':     { label: 'Not documented',color: '#c2c2c2' }
 };
 const srcOf = k => SOURCE[k] || SOURCE.unknown;
+
+
+// --- popup -> aquifer linkage ---------------------------------------------
+// Registered as the aquifer layers are built, so a popup opened before
+// aquifers.json lands still finds them later. Popup markup is a string, so the
+// click is handled by delegation and the label is refreshed on popupopen --
+// the button has to say "Hide" if the layer control already turned it on.
+const aquiferLayers = {};
+const GROUNDWATER_SOURCES = ['edwards-bfz', 'trinity', 'carrizo-wilcox'];
+
+const aquiferShown = k => Object.values(aquiferLayers[k] || {}).some(l => map.hasLayer(l));
+
+function toggleAquifer(k) {
+  const parts = Object.values(aquiferLayers[k] || {});
+  if (!parts.length) return;
+  const on = aquiferShown(k);
+  parts.forEach(l => (on ? map.removeLayer(l) : map.addLayer(l)));
+}
+
+function refreshAqBtn(b) {
+  const k = b.dataset.aquifer;
+  if (!Object.keys(aquiferLayers[k] || {}).length) {
+    b.disabled = true;
+    b.textContent = srcOf(k).label + ' \u2014 extent not loaded';
+    return;
+  }
+  const on = aquiferShown(k);
+  b.disabled = false;
+  b.classList.toggle('on', on);
+  b.textContent = (on ? 'Hide ' : 'Show ') + srcOf(k).label + ' extent';
+}
+
+// One row per popup: what supplies this user, and for a groundwater source a
+// button that draws that aquifer. Non-groundwater users get the chip only --
+// there is no extent to show for reclaimed effluent or a city main.
+function sourceControl(key) {
+  const s = srcOf(key);
+  if (!GROUNDWATER_SOURCES.includes(key)) {
+    return `<div class="aq-note"><i style="background:${s.color}"></i>` +
+           `Supplied by: ${esc(s.label)}</div>`;
+  }
+  return `<button class="aq-btn" data-aquifer="${esc(key)}" style="--c:${s.color}">` +
+         `Show ${esc(s.label)} extent</button>`;
+}
+
+map.on('popupopen', e => {
+  const el = e.popup.getElement();
+  if (el) el.querySelectorAll('.aq-btn').forEach(refreshAqBtn);
+});
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('.aq-btn');
+  if (!b || b.disabled) return;
+  toggleAquifer(b.dataset.aquifer);
+  refreshAqBtn(b);
+});
+
+// Keep every open button honest when the layer control is used instead.
+map.on('overlayadd overlayremove', () => {
+  document.querySelectorAll('.aq-btn').forEach(refreshAqBtn);
+});
 
 // --- water use sites ------------------------------------------------------
 const SITES = [
@@ -334,6 +412,7 @@ leanderSprings.bindPopup(
     'by the density-cut claim, 1,200 apartments draw ~240,000 gal/day of <em>city</em> ' +
     'water &mdash; about 26&times; the well.' +
   '</div>' +
+  sourceControl('trinity') +
   '<div class="srcs"><strong>Sources</strong><br>' +
     '<a href="https://leandersprings.us/" target="_blank" rel="noopener">leandersprings.us &mdash; project FAQ (developer; depth, aquifer, pump test, drawdown)</a>' +
     '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/" target="_blank" rel="noopener">Community Impact &mdash; P&amp;Z approval, Jun 2026</a>' +
@@ -365,6 +444,7 @@ const markers = SITES.map(s => {
     `<span class="badge ${s.quality}">${s.quality}</span>` +
     `<dl style="margin-top:8px">${rows}</dl>` +
     `<div style="font-size:12px;color:#444;margin-bottom:8px">${s.note}</div>` +
+    sourceControl(s.src) +
     `<div class="srcs"><strong>Sources</strong><br>${srcs}</div>`,
     { maxWidth: 320 }
   );
@@ -426,6 +506,7 @@ const gwMarkers = GROUNDWATER.map(g => {
           'service area, not a well site.'
         : 'Single reporting facility.') +
     '</div>' +
+    sourceControl(g.src) +
     '<div class="srcs"><strong>Source</strong><br>' +
       '<a href="https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage" target="_blank" rel="noopener">TWDB Water Use Survey &mdash; Detailed Groundwater Pumpage by County (Williamson, 2024)</a>' +
       '<a href="https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp" target="_blank" rel="noopener">TWDB Historical Groundwater Pumpage</a>' +
@@ -498,6 +579,8 @@ fetch('aquifers.json')
         ? `background:repeating-linear-gradient(45deg,${shade} 0 3px,#fff 3px 6px);` +
           `border:1px solid ${a.color}`
         : `background:${shade}`;
+      const base = a.key.replace(/-(outcrop|downdip)$/, '');
+      (aquiferLayers[base] = aquiferLayers[base] || {})[a.part] = layer;
       layerControl.addOverlay(layer, `<i style="${swatch}"></i>${esc(a.name)}`);
     });
     if (list && featureRows) {

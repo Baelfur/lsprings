@@ -228,6 +228,17 @@ Fill still carries provenance (orange = reported/estimated user, purple = verifi
 blue = Leander Springs) and a dashed ring still means system-wide rather than one wellhead.
 Source, provenance and scope are three independent things, so they get three channels.
 
+Each popup also carries a **button that draws the aquifer that user pumps** — "Show Trinity
+extent" on Liberty Hill and Leander Springs, "Show Edwards-BFZ extent" on Georgetown, Round
+Rock, Texas Crushed Stone, MM-North and Brushy Creek. It turns on both parts of that aquifer,
+outcrop and downdip, and stays in sync with the layer control in both directions: toggling
+from the control relabels any open button, and vice versa.
+
+Users with no aquifer get a chip instead of a button — there is no extent to draw for
+reclaimed effluent or a city main, so Cimarron Hills and Crystal Falls read "Supplied by:
+Reclaimed" and stop there. The button also disables itself if `aquifers.json` is absent,
+since the layers it toggles will not exist.
+
 | Source | Users | AF/yr |
 |---|---:|---:|
 | Edwards-BFZ | 5 | **11,123** |
