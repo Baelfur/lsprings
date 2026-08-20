@@ -15,6 +15,12 @@ Everything on the map is grouped into toggles in the top-right control: the four
 feature groups (Leander Springs, water use sites, groundwater pumpage, the rings)
 and one entry per aquifer extent.
 
+The 3 and 5 mile rings are context, not data. They draw in their own pane between the
+aquifer washes and the site circles, so nothing ever hides behind them, and each ring is
+two paths: an inert filled wash (`interactive: false`, so the square miles it covers never
+swallow a click meant for a site) plus a stroke-only outline that takes a hover and names
+the radius. Neither has a popup.
+
 ## Adding points
 
 Note the map's own contents are **not** built from the CSV — `SITES` and `GROUNDWATER`

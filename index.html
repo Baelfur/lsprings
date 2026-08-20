@@ -85,16 +85,34 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 map.createPane('aquifers').style.zIndex = 350;
 
 // --- reference rings around CENTER ---------------------------------------
-// Larger circle first so the darker 3 mi ring draws on top of it.
-const fiveMile = L.circle(CENTER, {
-  radius: 5 * MILE_IN_METERS,
-  color: '#7fce8b', weight: 2, fillColor: '#7fce8b', fillOpacity: 0.18
-}).bindPopup('5 mile radius');
+// The rings are context, not data. They get their own pane between the aquifer
+// washes (350) and the default overlay pane (400), so every site circle and
+// label draws on top of them and wins the click.
+map.createPane('rings').style.zIndex = 375;
 
-const threeMile = L.circle(CENTER, {
-  radius: 3 * MILE_IN_METERS,
-  color: '#1b6b3a', weight: 2, fillColor: '#1b6b3a', fillOpacity: 0.25
-}).bindPopup('3 mile radius');
+// Each ring is two paths. The filled wash is interactive:false, so the several
+// square miles it covers never swallow a click or a hover meant for a site
+// underneath. The outline is a thin stroke-only path that does take a hover, so
+// the ring can still say what it is -- a hit area a couple of pixels wide,
+// instead of the whole disc.
+function ring(miles, color, fillOpacity) {
+  const radius = miles * MILE_IN_METERS;
+  const wash = L.circle(CENTER, {
+    pane: 'rings', radius, stroke: false,
+    fillColor: color, fillOpacity, interactive: false
+  });
+  const edge = L.circle(CENTER, {
+    pane: 'rings', radius, color, weight: 2, fill: false
+  }).bindTooltip(miles + ' mile radius', { sticky: true, direction: 'top' });
+  return { wash, edge, paths: [wash, edge] };
+}
+
+// Larger ring first so the darker 3 mi wash lays over the 5 mi one.
+const fiveMileRing  = ring(5, '#7fce8b', 0.18);
+const threeMileRing = ring(3, '#1b6b3a', 0.25);
+
+// Kept for fitBounds, which only needs one shape's extent.
+const fiveMile = fiveMileRing.wash;
 
 // --- water use sites ------------------------------------------------------
 const SITES = [
@@ -348,7 +366,7 @@ const gwMarkers = GROUNDWATER.map(g => {
 });
 
 // --- toggleable groups ----------------------------------------------------
-const ringsLayer   = L.layerGroup([fiveMile, threeMile]).addTo(map);
+const ringsLayer   = L.layerGroup([...fiveMileRing.paths, ...threeMileRing.paths]).addTo(map);
 const subjectLayer = L.layerGroup([leanderSprings]).addTo(map);
 const sitesLayer   = L.layerGroup(markers).addTo(map);
 const pumpageLayer = L.layerGroup(gwMarkers).addTo(map);
