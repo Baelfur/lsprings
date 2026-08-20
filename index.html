@@ -58,6 +58,7 @@
   .scale-key .track { background: #e8e8e8; border-radius: 2px; height: 8px; }
   .scale-key .fill  { height: 8px; border-radius: 2px; min-width: 2px; }
   .scale-key .subj  { font-weight: 700; }
+  .scale-key .ref td.nm { color: #666; font-style: italic; }
   .scale-key .foot  { color: #666; margin-top: 6px; border-top: 1px solid #ddd;
                       padding-top: 5px; }
   .legend {
@@ -506,6 +507,64 @@ scaleKey.onAdd = function () {
   return d;
 };
 scaleKey.addTo(map);
+
+
+// --- gpm key --------------------------------------------------------------
+// The developer quotes flow rates; every other source on this map reports
+// annual volume. This ladder puts both on one axis, with household fixtures as
+// rungs, so "20 gpm" can be sized against something familiar.
+//
+// Site rates are CONTINUOUS EQUIVALENT: the year's volume spread evenly across
+// every minute of it. No real well runs that way -- they cycle -- so this is a
+// like-for-like comparison, not a pump specification.
+const AF_TO_GPM = 325851 / (365 * 24 * 60);
+const gpmOf = af => af * AF_TO_GPM;
+const gwAF = n => (GROUNDWATER.find(g => g.short === n) || {}).af;
+const siteAF = n => (SITES.find(s => s.short === n) || {}).af;
+
+const GPM_ROWS = [
+  { name: 'Bathroom faucet',        gpm: 2.2,  ref: true },
+  { name: 'Shower head',            gpm: 2.5,  ref: true },
+  { name: 'LS lagoon, average',     gpm: gpmOf(LAGOON_AF), color: '#2b7fd4', subject: true },
+  { name: 'Garden hose',            gpm: 10,   ref: true },
+  { name: 'LS \u201c20 gpm\u201d figure',  gpm: 20, color: '#2b7fd4' },
+  { name: 'MM-North Quarry',        gpm: gpmOf(gwAF('MM-North Quarry')), color: '#7d5bb5' },
+  { name: 'LS 48-hour pump test',   gpm: 95,   color: '#2b7fd4' },
+  { name: 'Cimarron Hills golf',    gpm: gpmOf(siteAF('Cimarron Hills')), color: '#d1502f' },
+  { name: 'Fire hose, 1\u00be in line', gpm: 150, ref: true },
+  { name: 'LS apartments',          gpm: gpmOf(269), color: '#2b7fd4' },
+  { name: 'Texas Crushed Stone',    gpm: gpmOf(siteAF('Texas Crushed Stone')), color: '#d1502f' },
+  { name: 'Fire hydrant',           gpm: 1000, ref: true },
+  { name: 'Georgetown, city',       gpm: gpmOf(gwAF('Georgetown')), color: '#7d5bb5' }
+].sort((a, b) => a.gpm - b.gpm);
+
+const gpmKey = L.control({ position: 'bottomright' });
+gpmKey.onAdd = function () {
+  const d = L.DomUtil.create('div', 'scale-key');
+  const hi = Math.max(...GPM_ROWS.map(r => r.gpm));
+  const lo = Math.min(...GPM_ROWS.map(r => r.gpm)) * 0.7;
+  const span = Math.log10(hi) - Math.log10(lo);
+  const rows = GPM_ROWS.map(r => {
+    const pct = Math.max(2, ((Math.log10(r.gpm) - Math.log10(lo)) / span) * 100);
+    const n = r.gpm >= 100 ? Math.round(r.gpm).toLocaleString() : r.gpm.toFixed(1);
+    return `<tr class="${r.ref ? 'ref' : ''} ${r.subject ? 'subj' : ''}">` +
+           `<td class="nm">${esc(r.name)}</td>` +
+           `<td class="af">${n}</td>` +
+           `<td class="bar"><div class="track">` +
+             `<div class="fill" style="width:${pct.toFixed(1)}%;background:${r.color || '#b0b4b8'}"></div>` +
+           `</div></td></tr>`;
+  }).join('');
+  d.innerHTML =
+    '<details open><summary><b>Flow rate &mdash; gallons per minute</b></summary>' +
+    '<div class="note">bars log-scaled &middot; <i>italic</i> = everyday reference</div>' +
+    `<table>${rows}</table>` +
+    '<div class="foot">Site rates are <b>continuous equivalent</b> &mdash; the year&rsquo;s ' +
+    'volume spread over every minute. Real wells cycle on and off.<br>' +
+    'Fixture rates are typical; a hose varies 5&ndash;15 gpm with pressure.</div></details>';
+  L.DomEvent.disableClickPropagation(d);
+  return d;
+};
+gpmKey.addTo(map);
 
 // --- colour legend --------------------------------------------------------
 const legend = L.control({ position: 'bottomleft' });

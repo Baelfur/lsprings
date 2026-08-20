@@ -199,6 +199,38 @@ caught the 2006 file naming the Balcones Fault Zone Edwards simply `EDWARDS`, wh
 Simplified outlines are for display. Anything that turns on an exact boundary should go
 back to the TWDB source.
 
+### Flow rate key — gallons per minute
+
+A second key, bottom right of the map. The developer quotes flow rates; every other source
+here reports annual volume. This ladder puts both on one axis with household fixtures as
+rungs, so a figure like "20 gpm" can be sized against something familiar.
+
+| | gpm | |
+|---|---:|---|
+| *Bathroom faucet* | 2.2 | typical fixture |
+| *Shower head* | 2.5 | typical fixture |
+| **LS lagoon, average** | **6.3** | their 9,072 gal/day |
+| *Garden hose* | 10 | varies 5–15 with pressure |
+| LS "20 gpm" figure | 20 | the FAQ's other number |
+| MM-North Quarry | 45.9 | |
+| LS 48-hour pump test | 95 | stress test, not operation |
+| Cimarron Hills golf | 100 | |
+| *Fire hose, 1¾ in line* | 150 | |
+| LS apartments | 167 | city water, developer-implied |
+| Texas Crushed Stone | 833 | |
+| *Fire hydrant* | 1,000 | common design target |
+| Georgetown, city | 5,111 | |
+
+Site rates are **continuous equivalent** — the year's volume spread evenly over every minute
+of it. No real well runs that way; they cycle. It is a like-for-like comparison, not a pump
+specification. Italic rows are everyday references; the rest derive from the same `SITES` and
+`GROUNDWATER` objects the map draws, at 1 AF/yr = 0.61996 gpm.
+
+What the ladder shows: the lagoon's average draw sits between a shower head and a garden
+hose. The FAQ's alternative "20 gpm" is twice a garden hose. The 48-hour pump test — which
+nobody proposes to run continuously — lands just under a golf course. And the apartments
+attached to the same project outrun a fire hose.
+
 ### Scale, for comparison
 
 Multiples are against the lagoon's 10.2 AF/yr. The map carries this as its own **scale key**
