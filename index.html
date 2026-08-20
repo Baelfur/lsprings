@@ -50,6 +50,12 @@
   .scale-key table { border-collapse: collapse; width: 100%; }
   .scale-key td { padding: 1px 0; vertical-align: middle; }
   .scale-key td.nm  { white-space: nowrap; padding-right: 6px; }
+  .scale-key td.chip { width: 9px; padding-right: 5px; }
+  .scale-key td.chip span { display: block; width: 9px; height: 9px; border-radius: 2px; }
+  .scale-key .totals { margin-top: 6px; border-top: 1px solid #ddd; padding-top: 5px; }
+  .scale-key .totals div { display: flex; align-items: center; gap: 5px; }
+  .scale-key .totals i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .scale-key .totals .v { margin-left: auto; font-variant-numeric: tabular-nums; }
   .scale-key td.af  { text-align: right; font-variant-numeric: tabular-nums;
                       padding-right: 5px; white-space: nowrap; }
   .scale-key td.x   { text-align: right; color: #666;
@@ -140,10 +146,24 @@ const threeMileRing = ring(3, '#1f7fa8', 0.22);
 // Kept for fitBounds, which only needs one shape's extent.
 const fiveMile = fiveMileRing.wash;
 
+
+// What actually supplies each user. This is the link the map was missing: the
+// aquifer name lived in popup prose, so nothing on screen connected a well to
+// the ground it draws from. Now it sets the ring around every site marker and a
+// chip in the scale key, in the same hue as that aquifer's extent layer.
+const SOURCE = {
+  'edwards-bfz': { label: 'Edwards-BFZ',   color: '#2a7a9b' },
+  'trinity':     { label: 'Trinity',       color: '#8a6d3b' },
+  'reclaimed':   { label: 'Reclaimed',     color: '#3f8f63' },
+  'city':        { label: 'City supply',   color: '#8a8f94' },
+  'unknown':     { label: 'Not documented',color: '#c2c2c2' }
+};
+const srcOf = k => SOURCE[k] || SOURCE.unknown;
+
 // --- water use sites ------------------------------------------------------
 const SITES = [
   {
-    name: 'Texas Crushed Stone', short: 'Texas Crushed Stone', af: 1343.5,
+    name: 'Texas Crushed Stone', short: 'Texas Crushed Stone', src: 'edwards-bfz', af: 1343.5,
     sub: 'Georgetown Quarry &middot; TCEQ RN102016482',
     lat: 30.576111, lon: -97.696666,
     label: 'Texas Crushed Stone<br>438M gal/yr',
@@ -172,7 +192,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Crystal Falls Golf Course', short: 'Crystal Falls', af: 180,
+    name: 'Crystal Falls Golf Course', short: 'Crystal Falls', src: 'reclaimed', af: 180,
     sub: '18-hole municipal course &middot; City of Leander',
     lat: 30.535165, lon: -97.883220,
     label: 'Crystal Falls<br>~59M gal/yr (est.)',
@@ -201,7 +221,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Twin Creeks Country Club', short: 'Twin Creeks', af: 189,
+    name: 'Twin Creeks Country Club', short: 'Twin Creeks', src: 'unknown', af: 189,
     sub: '18-hole private club &middot; Cedar Park',
     lat: 30.463224, lon: -97.856534,
     label: 'Twin Creeks<br>~62M gal/yr (est.)',
@@ -229,7 +249,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Cimarron Hills Golf &amp; CC', short: 'Cimarron Hills', af: 162,
+    name: 'Cimarron Hills Golf &amp; CC', short: 'Cimarron Hills', src: 'reclaimed', af: 162,
     sub: '18-hole Nicklaus course &middot; Georgetown',
     lat: 30.648033, lon: -97.7896178,
     label: 'Cimarron Hills<br>~53M gal/yr (est.)',
@@ -264,7 +284,7 @@ const SITES = [
 // Sits at CENTER: the SW corner of US 183A and RM 2243, which is what the
 // 3 and 5 mile rings are drawn from.
 const leanderSprings = L.circleMarker(CENTER, {
-  radius: 10, color: '#123f75', weight: 2,
+  radius: 10, color: SOURCE.trinity.color, weight: 3.5,
   fillColor: '#2b7fd4', fillOpacity: 0.95
 });
 
@@ -326,7 +346,8 @@ leanderSprings.bindPopup(
 const markers = SITES.map(s => {
   const circle = L.circle([s.lat, s.lon], {
     radius: 0.5 * MILE_IN_METERS,
-    color: '#7a2718', weight: 2, fillColor: '#d1502f', fillOpacity: 0.35
+    color: srcOf(s.src).color, weight: 3.5,
+    fillColor: '#d1502f', fillOpacity: 0.35
   });
 
   circle.bindTooltip(s.label, {
@@ -358,19 +379,19 @@ const markers = SITES.map(s => {
 // Municipal rows are SYSTEM-WIDE totals across multiple well fields; the point
 // is a representative location for the utility, NOT a single wellhead.
 const GROUNDWATER = [
-  { name: 'City of Georgetown', short: 'Georgetown', lat: 30.63266, lon: -97.67722, af: 8244,
+  { name: 'City of Georgetown', short: 'Georgetown', src: 'edwards-bfz', lat: 30.63266, lon: -97.67722, af: 8244,
     gal: '2,686,427,600', wells: 4, aq: 'Edwards-BFZ', system: true,
     label: 'Georgetown (municipal)<br>2,686M gal/yr' },
-  { name: 'City of Round Rock', short: 'Round Rock', lat: 30.50826, lon: -97.67891, af: 1450,
+  { name: 'City of Round Rock', short: 'Round Rock', src: 'edwards-bfz', lat: 30.50826, lon: -97.67891, af: 1450,
     gal: '472,448,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Round Rock (municipal)<br>472M gal/yr' },
-  { name: 'City of Liberty Hill', short: 'Liberty Hill', lat: 30.66490, lon: -97.92250, af: 188,
+  { name: 'City of Liberty Hill', short: 'Liberty Hill', src: 'trinity', lat: 30.66490, lon: -97.92250, af: 188,
     gal: '61,359,184', wells: 4, aq: 'Trinity', system: true,
     label: 'Liberty Hill (municipal)<br>61M gal/yr &middot; Trinity' },
-  { name: 'MM-North Austin Quarry', short: 'MM-North Quarry', lat: 30.45500, lon: -97.79500, af: 74,
+  { name: 'MM-North Austin Quarry', short: 'MM-North Quarry', src: 'edwards-bfz', lat: 30.45500, lon: -97.79500, af: 74,
     gal: '24,083,600', wells: 1, aq: 'Edwards-BFZ', system: false,
     label: 'MM-North Austin Quarry<br>24M gal/yr' },
-  { name: 'Brushy Creek MUD', short: 'Brushy Creek MUD', lat: 30.51270, lon: -97.76140, af: 11.5,
+  { name: 'Brushy Creek MUD', short: 'Brushy Creek MUD', src: 'edwards-bfz', lat: 30.51270, lon: -97.76140, af: 11.5,
     gal: '3,747,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Brushy Creek MUD<br>3.7M gal/yr' }
 ];
@@ -378,7 +399,8 @@ const GROUNDWATER = [
 const gwMarkers = GROUNDWATER.map(g => {
   const c = L.circle([g.lat, g.lon], {
     radius: 0.5 * MILE_IN_METERS,
-    color: '#4a2f78', weight: 2, dashArray: '5,4',
+    color: srcOf(g.src).color, weight: 3.5,
+    dashArray: g.system ? '7,4' : null,
     fillColor: '#7d5bb5', fillOpacity: 0.25
   });
 
@@ -444,12 +466,12 @@ fetch('aquifers.json')
       // Downdip is the same aquifer continuing underneath younger rock, so it
       // gets a fainter wash and a dashed edge -- present, but not competing.
       const down = a.part === 'downdip';
-      const shade = down ? lighten(a.color, 0.55) : a.color;
+      const shade = down ? lighten(a.color, 0.30) : a.color;
       const layer = L.geoJSON(a.geojson, {
         pane: 'aquifers',
-        style: { color: shade, weight: down ? 1.5 : 1, opacity: down ? 0.9 : 0.75,
-                 dashArray: down ? '5,4' : null,
-                 fillColor: shade, fillOpacity: down ? 0.22 : 0.30 }
+        style: { color: down ? a.color : shade, weight: down ? 2 : 1,
+                 opacity: 0.9, dashArray: down ? '6,4' : null,
+                 fillColor: shade, fillOpacity: down ? 0.30 : 0.34 }
       });
       layer.bindPopup(
         `<h3>${esc(a.name)}</h3>` +
@@ -473,7 +495,7 @@ fetch('aquifers.json')
       // Striping the downdip swatch says "same aquifer, buried" in a way two
       // flat blocks of one hue never did.
       const swatch = down
-        ? `background:repeating-linear-gradient(45deg,${shade} 0 3px,#fff 3px 5px);` +
+        ? `background:repeating-linear-gradient(45deg,${shade} 0 3px,#fff 3px 6px);` +
           `border:1px solid ${a.color}`
         : `background:${shade}`;
       layerControl.addOverlay(layer, `<i style="${swatch}"></i>${esc(a.name)}`);
@@ -504,12 +526,12 @@ function lighten(hex, amount) {
 // a popup and stale here. Rows span four orders of magnitude, so the bars are
 // log-scaled -- labelled as such, because a log bar read as linear lies.
 const SCALE_ROWS = [
-  ...GROUNDWATER.map(g => ({ name: g.short, af: g.af, color: '#7d5bb5' })),
-  ...SITES.map(s => ({ name: s.short, af: s.af, color: '#d1502f' })),
+  ...GROUNDWATER.map(g => ({ name: g.short, af: g.af, color: '#7d5bb5', src: g.src })),
+  ...SITES.map(s => ({ name: s.short, af: s.af, color: '#d1502f', src: s.src })),
   // Not a map node: the development's own residential draw, implied by the
   // developer's "400 fewer units saves ~80,000 gal/day" (200 gal/day/unit).
-  { name: 'LS apartments\u2020', af: 269, color: '#2b7fd4' },
-  { name: 'LS lagoon', af: LAGOON_AF, color: '#2b7fd4', subject: true }
+  { name: 'LS apartments\u2020', af: 269, color: '#2b7fd4', src: 'city' },
+  { name: 'LS lagoon', af: LAGOON_AF, color: '#2b7fd4', src: 'trinity', subject: true }
 ].sort((a, b) => b.af - a.af);
 
 const scaleKey = L.control({ position: 'bottomleft' });
@@ -518,11 +540,26 @@ scaleKey.onAdd = function () {
   const hi = Math.max(...SCALE_ROWS.map(r => r.af));
   const lo = Math.min(...SCALE_ROWS.map(r => r.af)) * 0.7;
   const span = Math.log10(hi) - Math.log10(lo);
+  const by = {};
+  SCALE_ROWS.forEach(r => {
+    const k = r.src || 'unknown';
+    (by[k] = by[k] || { af: 0, n: 0 }).af += r.af;
+    by[k].n += 1;
+  });
+  const totals = ['edwards-bfz', 'trinity', 'reclaimed', 'city', 'unknown']
+    .filter(k => by[k])
+    .map(k => `<div><i style="background:${srcOf(k).color}"></i>` +
+              `${esc(srcOf(k).label)} <span style="color:#888">&times;${by[k].n}</span>` +
+              `<span class="v">${Math.round(by[k].af).toLocaleString()}</span></div>`)
+    .join('');
+
   const rows = SCALE_ROWS.map(r => {
     const pct = Math.max(2, ((Math.log10(r.af) - Math.log10(lo)) / span) * 100);
     const af = r.af >= 100 ? Math.round(r.af).toLocaleString()
              : Number.isInteger(r.af) ? String(r.af) : r.af.toFixed(1);
     return `<tr class="${r.subject ? 'subj' : ''}">` +
+           `<td class="chip"><span style="background:${srcOf(r.src).color}"` +
+             ` title="${esc(srcOf(r.src).label)}"></span></td>` +
            `<td class="nm">${esc(r.name)}</td>` +
            `<td class="af">${af}</td>` +
            `<td class="bar"><div class="track">` +
@@ -532,8 +569,9 @@ scaleKey.onAdd = function () {
   }).join('');
   d.innerHTML =
     '<details open><summary><b>Scale &mdash; acre-feet per year</b></summary>' +
-    '<div class="note">bars log-scaled &middot; &times; is against the lagoon</div>' +
+    '<div class="note">bars log-scaled &middot; chip = what supplies it</div>' +
     `<table>${rows}</table>` +
+    `<div class="totals">${totals}</div>` +
     '<div class="foot">1 gpm running year-round &asymp; 1.6 AF/yr<br>' +
     '1 AF = 325,851 gal &middot; &dagger; city water, developer-implied</div></details>';
   L.DomEvent.disableClickPropagation(d);

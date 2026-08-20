@@ -215,6 +215,42 @@ caught the 2006 file naming the Balcones Fault Zone Edwards simply `EDWARDS`, wh
 Simplified outlines are for display. Anything that turns on an exact boundary should go
 back to the TWDB source.
 
+### Tying each user to what supplies it
+
+The aquifer name used to live only in popup prose, so nothing on screen connected a well to
+the ground under it. Now one `SOURCE` lookup drives both:
+
+- **the ring around every site marker**, in that aquifer's own hue — so a marker sitting on
+  the Trinity wash is ringed in Trinity brown
+- **a chip in the scale key**, same hue, plus subtotals by source
+
+Fill still carries provenance (orange = reported/estimated user, purple = verified pumpage,
+blue = Leander Springs) and a dashed ring still means system-wide rather than one wellhead.
+Source, provenance and scope are three independent things, so they get three channels.
+
+| Source | Users | AF/yr |
+|---|---:|---:|
+| Edwards-BFZ | 5 | **11,123** |
+| Trinity | 2 | **198** |
+| Reclaimed | 2 | 342 |
+| City supply | 1 | 269 |
+| Not documented | 1 | 189 |
+
+This is the comparison worth having. **Leander Springs and Liberty Hill are the only two
+Trinity users on the map, and together they draw 198 AF/yr — 1.8% of what the five Edwards-BFZ
+users take.** The lagoon is 5.1% of the Trinity pumping shown and 0.09% of all groundwater
+shown here.
+
+That cuts both ways, and the map does not settle it. Less competition on the Trinity, but
+also a smaller and slower system: the Trinity recharges at roughly 4–5% of rainfall against
+the Edwards' far higher rate, and Williamson County has no groundwater conservation district
+metering any of it. A small share of a small aquifer is not the same argument as a small share
+of a large one.
+
+Note the golf courses are ringed green, not in an aquifer hue: Cimarron Hills and Crystal
+Falls irrigate with **reclaimed** water and take no groundwater at all, and Twin Creeks'
+source is undocumented. Only groundwater rows carry an aquifer.
+
 ### Flow rate key — gallons per minute
 
 A second key, bottom right of the map. The developer quotes flow rates; every other source
