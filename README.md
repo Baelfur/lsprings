@@ -34,7 +34,47 @@ None to install. Python 3 standard library; Leaflet from CDN.
 
 ## Map contents
 
-Two reference rings around `CENTER` (30.580361, -97.837383): 3 mi dark green, 5 mi light green.
+**Leander Springs** sits at `CENTER` (30.580361, -97.837383) — the SW corner of US 183A
+and RM 2243 — drawn as a blue point. The 3 mi (dark green) and 5 mi (light green) rings
+are measured from it. Everything else on the map is a large water user around it.
+
+### Leander Springs — developer estimate
+
+| | |
+|---|---|
+| Lagoon evaporation | **8–9 acre-feet/yr** |
+| Approx. | 2.6–2.9 million gal/yr (~7,600 gal/day) |
+| Source | On-site 800 ft well, Lower Trinity Aquifer |
+| City backup | up to 200,000 gal/day, Dec–Feb off-peak only |
+| Loop | Closed, recycles 80–95% |
+
+77.9-acre mixed-use PUD anchored by a 4-acre Crystal Lagoon. Amended PUD approved by
+Planning & Zoning 5-1 on June 25, 2026; advancing to City Council. Lagoon is now
+classified "non-essential" and can be withheld during severe drought.
+
+Two caveats the headline number hides:
+
+- **8–9 AF is lagoon evaporation only**, not the development's total demand. 1,200
+  apartments at ~150 gpd/unit is ~202 AF/yr on its own — roughly 24× the lagoon figure,
+  before hotel, retail, and office. *(That multiplier is our arithmetic, not from their studies.)*
+- **~25 in/yr over 4 acres** is at or just below ordinary Central Texas net evaporation
+  (~26–36 in/yr), before crediting the claimed 50–80% VVater reduction. Plausible, but
+  not conservative. The city backup allowance (200,000 gal/day × ~90 days ≈ 55 AF) is
+  ~6× the claimed annual loss.
+
+Sources: [Community Impact, Jun 2026](https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/) ·
+[Community Impact, Jan 2021 water agreement](https://communityimpact.com/austin/cedar-park-leander/development/2021/01/22/council-oks-1b-leander-springs-development-addresses-water-concerns-in-agreement/) ·
+[Crystal Lagoons](https://www.crystal-lagoons.com/leander-city-texas-reveals-4-acre-amenity-by-crystal-lagoons-to-anchor-1b-mixed-use-development/)
+
+### Scale, for comparison
+
+| Site | AF/yr | vs lagoon |
+|---|---|---|
+| Texas Crushed Stone | 1,107 (reported) | 130× |
+| Twin Creeks | ~189 (est) | 22× |
+| Crystal Falls | ~180 (est) | 21× |
+| Cimarron Hills | ~162 (est) | 19× |
+| **Leander Springs lagoon** | **8.5 (developer)** | 1× |
 Two water-use sites, each drawn as a **half-mile red circle** with a label and a popup
 carrying the figures and source links.
 
