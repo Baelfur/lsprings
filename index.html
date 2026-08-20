@@ -87,6 +87,63 @@ const SITES = [
     ]
   },
   {
+    name: 'Crystal Falls Golf Course',
+    sub: '18-hole municipal course &middot; City of Leander',
+    lat: 30.535165, lon: -97.883220,
+    label: 'Crystal Falls<br>~59M gal/yr (est.)',
+    quality: 'estimated',
+    rows: [
+      ['Total', '~180 acre-feet/yr (est.)'],
+      ['Range', '150&ndash;250 AF (49&ndash;81M gal)'],
+      ['Gallons', '~59 million/yr'],
+      ['Per day', '~161,000 gal'],
+      ['Source', 'Reclaimed water (treated effluent)'],
+      ['', 'Travisso Water Reclamation Plant']
+    ],
+    note: 'City-owned and operated. Leander states treated Travisso effluent irrigates ' +
+          '&ldquo;the community golf course&rdquo;; Crystal Falls is the city&rsquo;s only ' +
+          'golf course, so that is an inference, not a named citation. Volume estimated from a ' +
+          '155-acre course polygon (~100 ac irrigated turf) &times; ~1.8 AF/acre.',
+    sources: [
+      ['City of Leander &mdash; Water &amp; Wastewater (Travisso effluent reuse)',
+       'https://www.leandertx.gov/506/Water-Wastewater'],
+      ['City of Leander &mdash; Golf Course directory',
+       'https://www.leandertx.gov/Directory.aspx?did=71'],
+      ['GCSAA Water Use on U.S. Golf Courses, Phase III (2022)',
+       'https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf'],
+      ['Course boundary: OSM relation/7363676',
+       'https://www.openstreetmap.org/relation/7363676']
+    ]
+  },
+  {
+    name: 'Twin Creeks Country Club',
+    sub: '18-hole private club &middot; Cedar Park',
+    lat: 30.463224, lon: -97.856534,
+    label: 'Twin Creeks<br>~62M gal/yr (est.)',
+    quality: 'estimated',
+    rows: [
+      ['Total', '~189 acre-feet/yr (est.)'],
+      ['Range', '158&ndash;262 AF (51&ndash;85M gal)'],
+      ['Gallons', '~62 million/yr'],
+      ['Per day', '~169,000 gal'],
+      ['Source', 'Not documented']
+    ],
+    note: 'Neither the volume nor the source is published. Cedar Park reports only ' +
+          '3 reclaimed-water customers and does not name them, so this course is ' +
+          '<strong>not</strong> confirmed to use reclaimed water &mdash; unlike the other two. ' +
+          'Volume estimated from a 247-acre polygon (~105 ac irrigated turf) &times; ~1.8 AF/acre.',
+    sources: [
+      ['City of Cedar Park &mdash; Water Conservation Plan (Art. 18.11)',
+       'https://ecode360.com/38630314'],
+      ['City of Cedar Park &mdash; Drought Contingency Plan (Art. 18.08)',
+       'https://ecode360.com/38629879'],
+      ['GCSAA Water Use on U.S. Golf Courses, Phase III (2022)',
+       'https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf'],
+      ['Course boundary: OSM relation/3203627',
+       'https://www.openstreetmap.org/relation/3203627']
+    ]
+  },
+  {
     name: 'Cimarron Hills Golf &amp; CC',
     sub: '18-hole Nicklaus course &middot; Georgetown',
     lat: 30.648033, lon: -97.7896178,

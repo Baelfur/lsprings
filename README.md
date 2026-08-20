@@ -55,23 +55,27 @@ Sources: [TWDB/TCEQ Aggregate Mining Water Use App. III](https://www.twdb.texas.
 [App. IV](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF) ·
 [USGS site](https://waterdata.usgs.gov/monitoring-location/USGS-948491085135000/)
 
-### Cimarron Hills Golf & Country Club
+### Golf courses — estimated volumes
 
-30.648033, -97.789618 · **estimated volume, documented source**
+None of the three publish a facility-level figure. Each is estimated the same way:
+course polygon from OpenStreetMap → irrigated turf → × ~1.8 AF/acre, where the rate is
+derived from Central Texas ET (ETo ~62 in × Kc 0.60) less effective rainfall, at 75%
+irrigation efficiency. Because the method is identical and all three are 18-hole courses,
+the results cluster — the spread between them is noise, not signal.
 
-| | |
-|---|---|
-| Total | ~162 acre-feet/yr (range 135–225) |
-| Approx. | ~53 million gal/yr (~145,000/day) |
-| Source | Reclaimed water — City of Georgetown |
+| Course | Polygon | Turf | Est. AF/yr | Est. gal/yr | Water source |
+|---|---|---|---|---|---|
+| [Cimarron Hills](https://www.openstreetmap.org/way/104049185) (Georgetown) | 131 ac | ~90 ac | ~162 | ~53M | Reclaimed — Georgetown ✅ |
+| [Crystal Falls](https://www.openstreetmap.org/relation/7363676) (Leander) | 155 ac | ~100 ac | ~180 | ~59M | Reclaimed — Travisso WRP ⚠️ |
+| [Twin Creeks](https://www.openstreetmap.org/relation/3203627) (Cedar Park) | 247 ac | ~105 ac | ~189 | ~62M | Not documented ❌ |
 
-No facility-level volume is published. Estimate = 131-acre course polygon
-(OSM way/104049185) → ~90 ac irrigated turf × ~1.8 AF/acre, where the rate comes from
-Central Texas ET (ETo ~62 in × Kc 0.60) less effective rainfall, at 75% irrigation
-efficiency. The **source** is documented, not estimated: all six Georgetown golf courses
-irrigate with reclaimed water.
+✅ documented and named · ⚠️ documented but course not named explicitly · ❌ unknown
+
+Combined, the three courses come to ~531 AF/yr — about **48% of the quarry alone**.
 
 Sources: [Georgetown Water Resources FAQ](https://georgetowntexas.gov/utilities/water/resources/faqs/index.php) ·
+[Leander Water & Wastewater](https://www.leandertx.gov/506/Water-Wastewater) ·
+[Leander Golf Course directory](https://www.leandertx.gov/Directory.aspx?did=71) ·
+[Cedar Park Water Conservation Plan](https://ecode360.com/38630314) ·
 [GCSAA Phase III water report](https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf) ·
-[TWDB BMP 5.2](https://www.twdb.texas.gov/conservation/BMPs/Mun/doc/5.2.pdf) ·
-[OSM way/104049185](https://www.openstreetmap.org/way/104049185)
+[TWDB BMP 5.2](https://www.twdb.texas.gov/conservation/BMPs/Mun/doc/5.2.pdf)
