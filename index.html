@@ -36,6 +36,30 @@
   .map-label.gw      { color: #4a2f78; border-style: dashed; }
   .map-label.subject { color: #123f75; }
   .map-label.site    { color: #7a2718; }
+  .scale-key {
+    background: rgba(255,255,255,0.94); padding: 8px 10px; border-radius: 4px;
+    font: 11px/1.35 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    width: 268px;
+  }
+  .scale-key summary { cursor: pointer; list-style: none; }
+  .scale-key summary::-webkit-details-marker { display: none; }
+  .scale-key summary::after { content: ' ▴'; color: #888; }
+  .scale-key details:not([open]) summary::after { content: ' ▾'; }
+  .scale-key b { display: inline; font-size: 12px; }
+  .scale-key .note { color: #666; margin-bottom: 6px; }
+  .scale-key table { border-collapse: collapse; width: 100%; }
+  .scale-key td { padding: 1px 0; vertical-align: middle; }
+  .scale-key td.nm  { white-space: nowrap; padding-right: 6px; }
+  .scale-key td.af  { text-align: right; font-variant-numeric: tabular-nums;
+                      padding-right: 5px; white-space: nowrap; }
+  .scale-key td.x   { text-align: right; color: #666;
+                      font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scale-key td.bar { width: 100%; }
+  .scale-key .track { background: #e8e8e8; border-radius: 2px; height: 8px; }
+  .scale-key .fill  { height: 8px; border-radius: 2px; min-width: 2px; }
+  .scale-key .subj  { font-weight: 700; }
+  .scale-key .foot  { color: #666; margin-top: 6px; border-top: 1px solid #ddd;
+                      padding-top: 5px; }
   .legend {
     background: rgba(255,255,255,0.94); padding: 8px 10px; border-radius: 4px;
     font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
@@ -118,7 +142,7 @@ const fiveMile = fiveMileRing.wash;
 // --- water use sites ------------------------------------------------------
 const SITES = [
   {
-    name: 'Texas Crushed Stone',
+    name: 'Texas Crushed Stone', short: 'Texas Crushed Stone', af: 1343.5,
     sub: 'Georgetown Quarry &middot; TCEQ RN102016482',
     lat: 30.576111, lon: -97.696666,
     label: 'Texas Crushed Stone<br>438M gal/yr',
@@ -147,7 +171,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Crystal Falls Golf Course',
+    name: 'Crystal Falls Golf Course', short: 'Crystal Falls', af: 180,
     sub: '18-hole municipal course &middot; City of Leander',
     lat: 30.535165, lon: -97.883220,
     label: 'Crystal Falls<br>~59M gal/yr (est.)',
@@ -176,7 +200,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Twin Creeks Country Club',
+    name: 'Twin Creeks Country Club', short: 'Twin Creeks', af: 189,
     sub: '18-hole private club &middot; Cedar Park',
     lat: 30.463224, lon: -97.856534,
     label: 'Twin Creeks<br>~62M gal/yr (est.)',
@@ -204,7 +228,7 @@ const SITES = [
     ]
   },
   {
-    name: 'Cimarron Hills Golf &amp; CC',
+    name: 'Cimarron Hills Golf &amp; CC', short: 'Cimarron Hills', af: 162,
     sub: '18-hole Nicklaus course &middot; Georgetown',
     lat: 30.648033, lon: -97.7896178,
     label: 'Cimarron Hills<br>~53M gal/yr (est.)',
@@ -320,19 +344,19 @@ const markers = SITES.map(s => {
 // Municipal rows are SYSTEM-WIDE totals across multiple well fields; the point
 // is a representative location for the utility, NOT a single wellhead.
 const GROUNDWATER = [
-  { name: 'City of Georgetown', lat: 30.63266, lon: -97.67722, af: 8244,
+  { name: 'City of Georgetown', short: 'Georgetown', lat: 30.63266, lon: -97.67722, af: 8244,
     gal: '2,686,427,600', wells: 4, aq: 'Edwards-BFZ', system: true,
     label: 'Georgetown (municipal)<br>2,686M gal/yr' },
-  { name: 'City of Round Rock', lat: 30.50826, lon: -97.67891, af: 1450,
+  { name: 'City of Round Rock', short: 'Round Rock', lat: 30.50826, lon: -97.67891, af: 1450,
     gal: '472,448,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Round Rock (municipal)<br>472M gal/yr' },
-  { name: 'City of Liberty Hill', lat: 30.66490, lon: -97.92250, af: 188,
+  { name: 'City of Liberty Hill', short: 'Liberty Hill', lat: 30.66490, lon: -97.92250, af: 188,
     gal: '61,359,184', wells: 4, aq: 'Trinity', system: true,
     label: 'Liberty Hill (municipal)<br>61M gal/yr &middot; Trinity' },
-  { name: 'MM-North Austin Quarry', lat: 30.45500, lon: -97.79500, af: 74,
+  { name: 'MM-North Austin Quarry', short: 'MM-North Quarry', lat: 30.45500, lon: -97.79500, af: 74,
     gal: '24,083,600', wells: 1, aq: 'Edwards-BFZ', system: false,
     label: 'MM-North Austin Quarry<br>24M gal/yr' },
-  { name: 'Brushy Creek MUD', lat: 30.51270, lon: -97.76140, af: 11.5,
+  { name: 'Brushy Creek MUD', short: 'Brushy Creek MUD', lat: 30.51270, lon: -97.76140, af: 11.5,
     gal: '3,747,000', wells: 3, aq: 'Edwards-BFZ', system: true,
     label: 'Brushy Creek MUD<br>3.7M gal/yr' }
 ];
@@ -440,7 +464,50 @@ fetch('aquifers.json')
   })
   .catch(err => console.error('failed to load aquifers.json', err));
 
-// --- legend ---------------------------------------------------------------
+
+// --- scale key ------------------------------------------------------------
+// Built from the same objects the map draws, so a figure can never be right in
+// a popup and stale here. Rows span four orders of magnitude, so the bars are
+// log-scaled -- labelled as such, because a log bar read as linear lies.
+const SCALE_ROWS = [
+  ...GROUNDWATER.map(g => ({ name: g.short, af: g.af, color: '#7d5bb5' })),
+  ...SITES.map(s => ({ name: s.short, af: s.af, color: '#d1502f' })),
+  // Not a map node: the development's own residential draw, implied by the
+  // developer's "400 fewer units saves ~80,000 gal/day" (200 gal/day/unit).
+  { name: 'LS apartments\u2020', af: 269, color: '#2b7fd4' },
+  { name: 'LS lagoon', af: LAGOON_AF, color: '#2b7fd4', subject: true }
+].sort((a, b) => b.af - a.af);
+
+const scaleKey = L.control({ position: 'bottomleft' });
+scaleKey.onAdd = function () {
+  const d = L.DomUtil.create('div', 'scale-key');
+  const hi = Math.max(...SCALE_ROWS.map(r => r.af));
+  const lo = Math.min(...SCALE_ROWS.map(r => r.af)) * 0.7;
+  const span = Math.log10(hi) - Math.log10(lo);
+  const rows = SCALE_ROWS.map(r => {
+    const pct = Math.max(2, ((Math.log10(r.af) - Math.log10(lo)) / span) * 100);
+    const af = r.af >= 100 ? Math.round(r.af).toLocaleString()
+             : Number.isInteger(r.af) ? String(r.af) : r.af.toFixed(1);
+    return `<tr class="${r.subject ? 'subj' : ''}">` +
+           `<td class="nm">${esc(r.name)}</td>` +
+           `<td class="af">${af}</td>` +
+           `<td class="bar"><div class="track">` +
+             `<div class="fill" style="width:${pct.toFixed(1)}%;background:${r.color}"></div>` +
+           `</div></td>` +
+           `<td class="x">${vsLagoon(r.af)}&times;</td></tr>`;
+  }).join('');
+  d.innerHTML =
+    '<details open><summary><b>Scale &mdash; acre-feet per year</b></summary>' +
+    '<div class="note">bars log-scaled &middot; &times; is against the lagoon</div>' +
+    `<table>${rows}</table>` +
+    '<div class="foot">1 gpm running year-round &asymp; 1.6 AF/yr<br>' +
+    '1 AF = 325,851 gal &middot; &dagger; city water, developer-implied</div></details>';
+  L.DomEvent.disableClickPropagation(d);
+  return d;
+};
+scaleKey.addTo(map);
+
+// --- colour legend --------------------------------------------------------
 const legend = L.control({ position: 'bottomleft' });
 legend.onAdd = function () {
   const d = L.DomUtil.create('div', 'legend');

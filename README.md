@@ -201,11 +201,14 @@ back to the TWDB source.
 
 ### Scale, for comparison
 
-Multiples are against the lagoon's 10.2 AF/yr.
+Multiples are against the lagoon's 10.2 AF/yr. The map carries this as its own **scale key**
+(bottom left), built from the same objects it draws so the two cannot drift apart. Bars are
+log-scaled and labelled as such — the range spans four orders of magnitude, and a linear bar
+would render everything below Round Rock as a single invisible sliver.
 
 | Site | AF/yr | vs lagoon |
 |---|---|---|
-| City of Georgetown | 8,244 (reported, 2024) | 812× |
+| City of Georgetown | 8,244 (reported, 2024) | 811× |
 | City of Round Rock | 1,450 (reported, 2024) | 143× |
 | Texas Crushed Stone | 1,343.5 (reported, 2024) | 132× |
 | Leander Springs, 1,200 units | ~269 (developer-implied) | 26× |
@@ -213,6 +216,6 @@ Multiples are against the lagoon's 10.2 AF/yr.
 | City of Liberty Hill | 188 (reported, 2024) | 19× |
 | Crystal Falls | ~180 (est) | 18× |
 | Cimarron Hills | ~162 (est) | 16× |
-| MM-North Austin Quarry | 74 (reported, 2024) | 7× |
+| MM-North Austin Quarry | 74 (reported, 2024) | 7.3× |
 | Brushy Creek MUD | 11.5 (reported, 2024) | 1.1× |
 | **Leander Springs lagoon** | **10.2 (developer)** | 1× |
