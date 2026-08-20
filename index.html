@@ -9,6 +9,16 @@
   html, body { margin: 0; height: 100%; }
   #map { height: 100%; width: 100%; background: #ddd; }
   .leaflet-popup-content { font: 14px/1.4 system-ui, sans-serif; }
+  .quarry-label {
+    font: 600 12px/1 system-ui, sans-serif;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid #7a2718;
+    color: #7a2718;
+    padding: 3px 6px;
+    border-radius: 3px;
+    box-shadow: none;
+  }
+  .quarry-label::before { border-right-color: #7a2718; }
 </style>
 </head>
 <body>
@@ -42,7 +52,37 @@ const threeMile = L.circle(CENTER, {
   fillOpacity: 0.25
 }).addTo(map).bindPopup('3 mile radius');
 
-map.fitBounds(fiveMile.getBounds().pad(0.1));
+// Texas Crushed Stone, Georgetown Quarry (TCEQ RN102016482).
+// Coords and water use are from the TWDB/TCEQ aggregate mining water use
+// survey, Appendix III, reporting year 2019.
+const quarry = L.circleMarker([30.576111, -97.696666], {
+  radius: 9,
+  color: '#7a2718',
+  weight: 2,
+  fillColor: '#d1502f',
+  fillOpacity: 0.9
+}).addTo(map);
+
+quarry.bindTooltip('Texas Crushed Stone &mdash; 361M gal/yr', {
+  permanent: true,
+  direction: 'right',
+  offset: [10, 0],
+  className: 'quarry-label'
+});
+
+quarry.bindPopup(
+  '<strong>Texas Crushed Stone Co.</strong><br>' +
+  'Georgetown Quarry (TCEQ RN102016482)<br><br>' +
+  '<strong>2019 water use:</strong> 1,106.82 acre-feet<br>' +
+  '&asymp; 361 million gallons/yr (~988,000 gal/day)<br><br>' +
+  '<strong>Source:</strong> 99.9% groundwater (1,105.64 AF)<br>' +
+  'Surface water: 1.17 AF (0.1%)<br><br>' +
+  '<em>TWDB/TCEQ aggregate mining water use survey, 2019</em>'
+);
+
+// Frame the rings and the quarry together - the quarry sits ~8.4 mi east,
+// outside the 5 mi ring, so fitting only the circles would push it off-screen.
+map.fitBounds(L.featureGroup([fiveMile, quarry]).getBounds().pad(0.15));
 
 fetch('points.json')
   .then(r => r.ok ? r.json() : [])
