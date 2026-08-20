@@ -147,7 +147,18 @@ const markers = SITES.map(s => {
 });
 
 // Frame the rings and both sites together.
-map.fitBounds(L.featureGroup([fiveMile, ...markers]).getBounds().pad(0.08));
+const extent = L.featureGroup([fiveMile, ...markers]).getBounds().pad(0.08);
+map.fitBounds(extent);
+
+// Leaflet caches the container size at init. If layout is still settling (web
+// fonts, tab restore) it measures too small and tiles stop short of the edges.
+// Re-measure once the page is fully loaded, and on every resize.
+function refit() {
+  map.invalidateSize({ animate: false });
+  map.fitBounds(extent);
+}
+window.addEventListener('load', refit);
+window.addEventListener('resize', refit);
 
 fetch('points.json')
   .then(r => r.ok ? r.json() : [])
