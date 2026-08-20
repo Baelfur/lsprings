@@ -21,6 +21,21 @@
   .badge.reported  { background: #1b6b3a; color: #fff; }
   .badge.estimated { background: #b26a00; color: #fff; }
   .badge.developer { background: #1c5aa8; color: #fff; }
+  .badge.pumpage   { background: #5b3d8f; color: #fff; }
+  .gw-label {
+    font: 600 12px/1.3 system-ui, sans-serif;
+    background: rgba(255,255,255,0.93);
+    border: 1px dashed #4a2f78; color: #4a2f78;
+    padding: 3px 6px; border-radius: 3px; box-shadow: none; white-space: nowrap;
+  }
+  .gw-label::before { border-right-color: #4a2f78; }
+  .legend {
+    background: rgba(255,255,255,0.94); padding: 8px 10px; border-radius: 4px;
+    font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+  }
+  .legend b { display: block; margin-bottom: 4px; font-size: 12px; }
+  .legend i { width: 12px; height: 12px; display: inline-block;
+              margin-right: 6px; vertical-align: -2px; border-radius: 50%; }
   .subject-label {
     font: 600 12px/1.3 system-ui, sans-serif;
     background: rgba(255,255,255,0.93);
@@ -74,22 +89,26 @@ const SITES = [
     name: 'Texas Crushed Stone',
     sub: 'Georgetown Quarry &middot; TCEQ RN102016482',
     lat: 30.576111, lon: -97.696666,
-    label: 'Texas Crushed Stone<br>361M gal/yr',
+    label: 'Texas Crushed Stone<br>438M gal/yr',
     quality: 'reported',
     rows: [
-      ['Total', '1,106.82 acre-feet (2019)'],
-      ['Gallons', '~361 million/yr'],
-      ['Per day', '~988,000 gal'],
-      ['Source', 'Groundwater, 1,105.64 AF (99.9%)'],
-      ['', 'Surface water 1.17 AF (0.1%)']
+      ['Total', '1,343.5 acre-feet (2024)'],
+      ['Gallons', '437,788,200/yr'],
+      ['Per day', '~1.20 million gal'],
+      ['Source', 'Groundwater, Edwards-BFZ Aquifer'],
+      ['Wells', '1 reported (2024)'],
+      ['2019', '1,106.82 AF &mdash; up 21% since']
     ],
-    note: 'Single largest aggregate water user in Williamson County ' +
-          '&mdash; ~85% of the county total (1,308 AF).',
+    note: 'Single largest aggregate water user in Williamson County. The 2024 ' +
+          'figure comes from the TWDB detailed groundwater pumpage report, which ' +
+          'supersedes the 2019 mining-survey number shown earlier.',
     sources: [
       ['TWDB/TCEQ Aggregate Mining Water Use, App. III (Table 3-2)',
        'https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF'],
       ['TWDB Mining Water Use, App. IV (county projections)',
        'https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF'],
+      ['TWDB Detailed Groundwater Pumpage by County (2024)',
+       'https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage'],
       ['USGS water-use site 948491085135000',
        'https://waterdata.usgs.gov/monitoring-location/USGS-948491085135000/'],
       ['Texas Crushed Stone Co.', 'https://www.texascrushedstoneco.com/']
@@ -253,8 +272,84 @@ const markers = SITES.map(s => {
   return circle;
 });
 
-// Frame the rings and both sites together.
-const extent = L.featureGroup([fiveMile, leanderSprings, ...markers]).getBounds().pad(0.08);
+
+// --- verified groundwater withdrawals within ~15 mi -----------------------
+// TWDB Water Use Survey, "Detailed Groundwater Pumpage by County", Williamson
+// County, reporting year 2024. Self-reported by each entity to the state.
+// Municipal rows are SYSTEM-WIDE totals across multiple well fields; the point
+// is a representative location for the utility, NOT a single wellhead.
+const GROUNDWATER = [
+  { name: 'City of Georgetown', lat: 30.63266, lon: -97.67722, af: 8244,
+    gal: '2,686,427,600', wells: 4, aq: 'Edwards-BFZ', system: true,
+    label: 'Georgetown (municipal)<br>2,686M gal/yr' },
+  { name: 'City of Round Rock', lat: 30.50826, lon: -97.67891, af: 1450,
+    gal: '472,448,000', wells: 3, aq: 'Edwards-BFZ', system: true,
+    label: 'Round Rock (municipal)<br>472M gal/yr' },
+  { name: 'City of Liberty Hill', lat: 30.66490, lon: -97.92250, af: 188,
+    gal: '61,359,184', wells: 4, aq: 'Trinity', system: true,
+    label: 'Liberty Hill (municipal)<br>61M gal/yr &middot; Trinity' },
+  { name: 'MM-North Austin Quarry', lat: 30.45500, lon: -97.79500, af: 74,
+    gal: '24,083,600', wells: 1, aq: 'Edwards-BFZ', system: false,
+    label: 'MM-North Austin Quarry<br>24M gal/yr' },
+  { name: 'Brushy Creek MUD', lat: 30.51270, lon: -97.76140, af: 11.5,
+    gal: '3,747,000', wells: 3, aq: 'Edwards-BFZ', system: true,
+    label: 'Brushy Creek MUD<br>3.7M gal/yr' }
+];
+
+const gwMarkers = GROUNDWATER.map(g => {
+  const c = L.circle([g.lat, g.lon], {
+    radius: 0.5 * MILE_IN_METERS,
+    color: '#4a2f78', weight: 2, dashArray: '5,4',
+    fillColor: '#7d5bb5', fillOpacity: 0.25
+  }).addTo(map);
+
+  c.bindTooltip(g.label, {
+    permanent: true, direction: 'right', offset: [12, 0], className: 'gw-label'
+  });
+
+  c.bindPopup(
+    `<h3>${g.name}</h3>` +
+    `<div class="sub">${g.system ? 'System-wide pumpage' : 'Single facility'} &middot; ${g.aq} Aquifer</div>` +
+    '<span class="badge pumpage">reported pumpage</span>' +
+    '<dl style="margin-top:8px">' +
+      `<dt>2024</dt><dd>${g.af.toLocaleString()} acre-feet</dd>` +
+      `<dt>Gallons</dt><dd>${g.gal}</dd>` +
+      `<dt>Wells</dt><dd>${g.wells} reported</dd>` +
+      `<dt>Aquifer</dt><dd>${g.aq}</dd>` +
+      `<dt>vs lagoon</dt><dd>${Math.round(g.af/8.5).toLocaleString()}&times; Leander Springs</dd>` +
+    '</dl>' +
+    '<div style="font-size:12px;color:#444;margin-bottom:8px">' +
+      (g.system
+        ? 'This is the utility&rsquo;s <strong>whole-system</strong> groundwater pumpage across ' +
+          g.wells + ' wells, not one wellhead. The marker is a representative location for the ' +
+          'service area, not a well site.'
+        : 'Single reporting facility.') +
+    '</div>' +
+    '<div class="srcs"><strong>Source</strong><br>' +
+      '<a href="https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage" target="_blank" rel="noopener">TWDB Water Use Survey &mdash; Detailed Groundwater Pumpage by County (Williamson, 2024)</a>' +
+      '<a href="https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp" target="_blank" rel="noopener">TWDB Historical Groundwater Pumpage</a>' +
+    '</div>',
+    { maxWidth: 330 }
+  );
+  return c;
+});
+
+// --- legend ---------------------------------------------------------------
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function () {
+  const d = L.DomUtil.create('div', 'legend');
+  d.innerHTML =
+    '<b>Water use, acre-feet/yr</b>' +
+    '<i style="background:#2b7fd4"></i>Leander Springs &mdash; developer est.<br>' +
+    '<i style="background:#d1502f"></i>Reported / estimated user<br>' +
+    '<i style="background:#7d5bb5;border:1px dashed #4a2f78"></i>Verified groundwater pumpage (2024)<br>' +
+    '<i style="background:#7fce8b"></i>3 / 5 mile rings';
+  return d;
+};
+legend.addTo(map);
+
+// Frame the rings and every site together.
+const extent = L.featureGroup([fiveMile, leanderSprings, ...markers, ...gwMarkers]).getBounds().pad(0.08);
 map.fitBounds(extent);
 
 // Leaflet caches the container size at init. If layout is still settling (web

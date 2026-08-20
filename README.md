@@ -66,6 +66,41 @@ Sources: [Community Impact, Jun 2026](https://communityimpact.com/austin/leander
 [Community Impact, Jan 2021 water agreement](https://communityimpact.com/austin/cedar-park-leander/development/2021/01/22/council-oks-1b-leander-springs-development-addresses-water-concerns-in-agreement/) ·
 [Crystal Lagoons](https://www.crystal-lagoons.com/leander-city-texas-reveals-4-acre-amenity-by-crystal-lagoons-to-anchor-1b-mixed-use-development/)
 
+### Verified groundwater withdrawals within ~15 mi
+
+From the TWDB Water Use Survey, **Detailed Groundwater Pumpage by County** (Williamson,
+reporting year 2024) — self-reported by each entity to the state, with aquifer and well count.
+
+| Entity | mi | AF/yr | Mgal | Aquifer | Wells | vs lagoon |
+|---|---:|---:|---:|---|---:|---:|
+| City of Georgetown | 10.2 | 8,244 | 2,686 | Edwards-BFZ | 4 | 970× |
+| City of Round Rock | 10.7 | 1,450 | 472 | Edwards-BFZ | 3 | 171× |
+| Texas Crushed Stone | 8.4 | 1,344 | 438 | Edwards-BFZ | 1 | 158× |
+| City of Liberty Hill | 7.7 | 188 | 61 | **Trinity** | 4 | 22× |
+| MM-North Austin Quarry | 9.0 | 74 | 24 | Edwards-BFZ | 1 | 9× |
+| Brushy Creek MUD | 6.5 | 11.5 | 3.7 | Edwards-BFZ | 3 | 1.4× |
+
+Combined: **~11,300 AF/yr**, about 1,300× the Leander Springs lagoon estimate.
+
+Just outside the radius, for reference: Jonah Water SUD (18.0 mi, 1,479 AF, 9 wells) and
+City of Hutto (17.5 mi, 900 AF, Carrizo-Wilcox, 6 wells).
+
+Municipal rows are **system-wide** pumpage across multiple well fields — the map marker is a
+representative location for the service area, not a wellhead.
+
+**Texas Crushed Stone updated**: the 2024 pumpage report gives 1,343.5 AF (437,788,200 gal),
+up 21% from the 1,106.82 AF in the 2019 mining survey. The map now shows the 2024 figure.
+
+**Regulatory context**: Williamson County has **no groundwater conservation district**, so
+wells here are not permitted or metered by any district. Everything above is self-reported
+to TWDB, and the "non-surveyed estimate" rows in the same report — TWDB's own estimate of
+unmetered domestic, livestock, and irrigation pumping — add several hundred million gallons
+a year countywide on top.
+
+Sources: [TWDB Detailed Groundwater Pumpage by County](https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage) ·
+[TWDB Historical Groundwater Pumpage](https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp) ·
+[Williamson County — why the county needs a GCD](https://www.wilcotx.gov/CivicAlerts.aspx?AID=42)
+
 ### Scale, for comparison
 
 | Site | AF/yr | vs lagoon |
