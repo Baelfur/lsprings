@@ -392,18 +392,29 @@ fetch('aquifers.json')
     const list = document.querySelector('.leaflet-control-layers-overlays');
     const featureRows = list ? list.children.length : 0;
     data.aquifers.forEach(a => {
+      // Outcrop reads as the solid one because it is the part at the surface.
+      // Downdip is the same aquifer continuing underneath younger rock, so it
+      // gets a fainter wash and a dashed edge -- present, but not competing.
+      const down = a.part === 'downdip';
       const layer = L.geoJSON(a.geojson, {
         pane: 'aquifers',
-        style: { color: a.color, weight: 1, opacity: 0.7,
-                 fillColor: a.color, fillOpacity: 0.20 }
+        style: { color: a.color, weight: 1, opacity: down ? 0.5 : 0.75,
+                 dashArray: down ? '4,3' : null,
+                 fillColor: a.color, fillOpacity: down ? 0.08 : 0.22 }
       });
       layer.bindPopup(
-        `<h3>${esc(a.name)} Aquifer</h3>` +
-        '<div class="sub">TWDB mapped extent &middot; clipped to this map</div>' +
+        `<h3>${esc(a.name)}</h3>` +
+        `<div class="sub">TWDB mapped extent &middot; ${esc(a.part)} &middot; clipped to this map</div>` +
         '<div style="font-size:12px;color:#444;margin:8px 0">' +
-          'Full mapped extent, outcrop and downdip together &mdash; where the aquifer ' +
-          'exists, not where it is being pumped. Outlines are simplified for display; ' +
-          'use the TWDB source for anything that turns on an exact boundary.' +
+          (a.part === 'outcrop'
+            ? 'Where the aquifer reaches the <strong>surface</strong> &mdash; its recharge ' +
+              'zone, and where shallower wells tap it.'
+            : 'Where the aquifer continues in the <strong>subsurface</strong> beneath ' +
+              'younger rock. Still pumped, but by deeper wells, and it underlies other ' +
+              'aquifers mapped above it &mdash; so overlap here is real, not an error.') +
+          ' This is where the aquifer exists, not where anyone is pumping it. Outlines ' +
+          'are simplified for display; use the TWDB source for anything that turns on an ' +
+          'exact boundary.' +
         '</div>' +
         '<div class="srcs"><strong>Source</strong><br>' +
           '<a href="https://www.twdb.texas.gov/mapping/gisdata.asp" target="_blank" rel="noopener">TWDB &mdash; Major Aquifers GIS data</a>' +

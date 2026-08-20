@@ -119,20 +119,43 @@ Sources: [TWDB Detailed Groundwater Pumpage by County](https://www3.twdb.texas.g
 
 ### Aquifer extents
 
-Off by default — tick them in the top-right control. Each is the TWDB **mapped extent**,
-outcrop and downdip together: where the aquifer *exists*, not where anyone is pumping it.
-They draw in their own map pane beneath every ring, circle and label, so turning one on
-never hides a data point.
+Off by default — tick them in the top-right control. They draw in their own map pane
+beneath every ring, circle and label, so turning one on never hides a data point.
 
-Three ship, and they are the three the figures above name: **Edwards (Balcones Fault
-Zone)** (Georgetown, Round Rock, Texas Crushed Stone, MM-North, Brushy Creek),
-**Trinity** (the Leander Springs well and Liberty Hill), and **Carrizo-Wilcox** (the Hutto
-reference). A fourth rule, **Edwards-Trinity (Plateau)**, matches in the source but falls
-entirely outside `BBOX` — it is kept in `RULES` so a wider box picks it up.
+Each aquifer ships as **two layers**, because the TWDB file's `AQUIFER` column separates
+them and merging the two is misleading:
 
-Turning Edwards-BFZ and Trinity on together draws the point the numbers make: the boundary
-runs north–south through the middle of the map, with every Edwards-BFZ pumper east of it
-and Leander Springs and Liberty Hill west, on the Trinity.
+| Part | Meaning | Style |
+|---|---|---|
+| **outcrop** | where the aquifer reaches the surface — its recharge zone, and where shallower wells tap it | solid fill |
+| **downdip** | where it continues in the subsurface beneath younger rock — still pumped, by deeper wells | faint fill, dashed edge |
+
+Downdip extents **legitimately overlap** the aquifers mapped above them; that is stacked
+geology, not a rendering error. Trinity's downdip is the extreme case — within the clip
+box it covers 2,231 sq mi against the outcrop's 1,193, and statewide it runs east to
+longitude −94.8:
+
+| Layer | sq mi in box | % of box |
+|---|---:|---:|
+| Trinity — downdip | 2,231 | 56.5% |
+| Trinity — outcrop | 1,193 | 30.2% |
+| Edwards-BFZ — outcrop | 410 | 10.4% |
+| Edwards-BFZ — downdip | 254 | 6.4% |
+| Carrizo-Wilcox — outcrop | 210 | 5.3% |
+| Carrizo-Wilcox — downdip | 2 | 0.0% |
+
+Drawn as one merged Trinity layer it covered **87% of the map**, which buried the
+distinction the pumpage figures rest on. Ticking the two *outcrops* together is the view
+that matches the data: Edwards-BFZ east of the escarpment under Georgetown, Round Rock,
+Texas Crushed Stone, MM-North and Brushy Creek; Trinity west of it under Leander Springs
+and Liberty Hill.
+
+Polygons carrying `AQUIFER = 0` are dropped. Every one tested sits enclosed inside a code
+1 or 2 polygon, so they are windows *through* the aquifer, and filling them in overstated
+each extent slightly.
+
+A fourth rule, **Edwards-Trinity (Plateau)**, matches in the source but falls entirely
+outside `BBOX` — it stays in `RULES` so a wider box picks it up.
 
 Building `aquifers.json` takes one download, because the source is far too large to fetch
 at page load — the statewide shapefile is 11 MB and the trimmed result is 204 KB (56 KB

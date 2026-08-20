@@ -37,6 +37,17 @@ TOLERANCE = 0.001
 # clip edge that would only add bytes.
 MIN_RING_AREA = 1e-6
 
+# The shapefile's AQUIFER column separates the parts of each aquifer. Verified
+# against the geometry rather than taken on faith: code 2 reaches far further
+# east than code 1 (Trinity's runs to lon -94.8, deep into East Texas), and
+# every code 0 polygon tested is enclosed inside a code 1 or 2 polygon, so those
+# are non-aquifer windows -- holes -- and must not be drawn as aquifer.
+PARTS = {
+    "1": ("outcrop", "outcrop"),    # at or near the surface: recharge, shallow wells
+    "2": ("downdip", "downdip"),    # continues in the subsurface under younger rock
+}
+CODE_FIELD = "AQUIFER"
+
 # Ordered: the first rule whose keywords all appear in the name wins, so
 # "Edwards-Trinity" and "Edwards (Balcones Fault Zone)" are both settled
 # before the bare "Trinity" rule can claim them.
@@ -295,15 +306,23 @@ def build(source):
                  f"properties seen: {sorted((features[0].get('properties') or {}))}")
     print(f"name field: {field}")
 
-    buckets, seen, skipped = {}, set(), set()
+    buckets, seen, skipped, holes = {}, set(), set(), 0
     for feat in features:
-        name = (feat.get("properties") or {}).get(field)
+        props = feat.get("properties") or {}
+        name = props.get(field)
         seen.add(name)
         hit = classify(name)
         if not hit:
             skipped.add(name)
             continue
+        part = PARTS.get(str(props.get(CODE_FIELD, "")).strip())
+        if not part:            # code 0: a window through the aquifer, not aquifer
+            holes += 1
+            continue
+        part_key, part_label = part
         key, label, color = hit
+        key = f"{key}-{part_key}"
+        label = f"{label} \u2014 {part_label}"
         rings_out = []
         for poly in polygons(feat.get("geometry")):
             kept = [r for r in (prepare(ring) for ring in poly) if r]
@@ -312,17 +331,20 @@ def build(source):
         if not rings_out:
             continue
         b = buckets.setdefault(key, {"key": key, "name": label, "color": color,
+                                     "part": part_key,
                                      "geojson": {"type": "FeatureCollection", "features": []}})
         for rings in rings_out:
             b["geojson"]["features"].append(
                 {"type": "Feature", "properties": {"aquifer": label},
                  "geometry": {"type": "Polygon", "coordinates": rings}})
 
-    ordered = [buckets[k] for k, _, _, _ in RULES if k in buckets]
+    ordered = [buckets[f"{k}-{p}"] for k, _, _, _ in RULES
+               for p, _ in PARTS.values() if f"{k}-{p}" in buckets]
     OUTPUT.write_text(json.dumps({"bbox": list(BBOX), "aquifers": ordered}) + "\n",
                       encoding="utf-8")
 
-    print(f"read {len(features)} features, {len(seen)} distinct aquifer names")
+    print(f"read {len(features)} features, {len(seen)} distinct aquifer names, "
+          f"skipped {holes} hole polygons")
     for a in ordered:
         pts = sum(len(r) for f in a["geojson"]["features"] for r in f["geometry"]["coordinates"])
         print(f"  kept {a['name']:<32} {len(a['geojson']['features']):>3} polygons  {pts:>5} points")
