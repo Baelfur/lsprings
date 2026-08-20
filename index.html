@@ -15,23 +15,41 @@
 <div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map = L.map('map').setView([39.8, -98.6], 4);
+const CENTER = [30.580360532644164, -97.83738257327695];
+const MILE_IN_METERS = 1609.344;
+
+const map = L.map('map').setView(CENTER, 11);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Larger circle first so the darker 3 mi ring draws on top of it.
+const fiveMile = L.circle(CENTER, {
+  radius: 5 * MILE_IN_METERS,
+  color: '#7fce8b',
+  weight: 2,
+  fillColor: '#7fce8b',
+  fillOpacity: 0.18
+}).addTo(map).bindPopup('5 mile radius');
+
+const threeMile = L.circle(CENTER, {
+  radius: 3 * MILE_IN_METERS,
+  color: '#1b6b3a',
+  weight: 2,
+  fillColor: '#1b6b3a',
+  fillOpacity: 0.25
+}).addTo(map).bindPopup('3 mile radius');
+
+map.fitBounds(fiveMile.getBounds().pad(0.1));
+
 fetch('points.json')
   .then(r => r.ok ? r.json() : [])
   .then(points => {
-    if (!points.length) return;
-    const group = L.featureGroup(
-      points.map(p => L.marker([p.lat, p.lon]).bindPopup(
-        `<strong>${p.name ?? ''}</strong>${p.note ? '<br>' + p.note : ''}`
-      ))
-    ).addTo(map);
-    map.fitBounds(group.getBounds().pad(0.2));
+    points.forEach(p => L.marker([p.lat, p.lon]).addTo(map).bindPopup(
+      `<strong>${p.name ?? ''}</strong>${p.note ? '<br>' + p.note : ''}`
+    ));
   })
   .catch(err => console.error('failed to load points.json', err));
 </script>

@@ -6,7 +6,7 @@ A very simple map app. Static page served by GitHub Pages, data prepared by Pyth
 
 GitHub Pages only serves static files — no Python runs at request time. So:
 
-- **`index.html`** — the whole UI. Leaflet + OpenStreetMap tiles, loaded from a CDN. No build step, no framework.
+- **`index.html`** — the whole UI. Leaflet + OpenStreetMap tiles, loaded from a CDN. No build step, no framework. Draws two radius rings around a fixed center point (`CENTER` at the top of the script): 3 mi in dark green, 5 mi in light green.
 - **`scripts/build_data.py`** — standard library only. Reads `data/points.csv`, writes `points.json`.
 - **`points.json`** — what the page fetches at load time. Committed, so Pages can serve it.
 
