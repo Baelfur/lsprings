@@ -8,17 +8,29 @@
 <style>
   html, body { margin: 0; height: 100%; }
   #map { height: 100%; width: 100%; background: #ddd; }
-  .leaflet-popup-content { font: 14px/1.4 system-ui, sans-serif; }
-  .quarry-label {
-    font: 600 12px/1 system-ui, sans-serif;
-    background: rgba(255,255,255,0.92);
+  .leaflet-popup-content { font: 14px/1.45 system-ui, sans-serif; max-width: 300px; }
+  .leaflet-popup-content h3 { margin: 0 0 2px; font-size: 15px; }
+  .leaflet-popup-content .sub { color: #555; font-size: 12px; margin-bottom: 8px; }
+  .leaflet-popup-content dl { margin: 0 0 8px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .leaflet-popup-content dt { color: #555; }
+  .leaflet-popup-content dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .leaflet-popup-content .srcs { border-top: 1px solid #ddd; padding-top: 6px; font-size: 12px; }
+  .leaflet-popup-content .srcs a { display: block; margin-bottom: 2px; }
+  .badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 11px;
+           font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .badge.reported  { background: #1b6b3a; color: #fff; }
+  .badge.estimated { background: #b26a00; color: #fff; }
+  .site-label {
+    font: 600 12px/1.3 system-ui, sans-serif;
+    background: rgba(255,255,255,0.93);
     border: 1px solid #7a2718;
     color: #7a2718;
     padding: 3px 6px;
     border-radius: 3px;
     box-shadow: none;
+    white-space: nowrap;
   }
-  .quarry-label::before { border-right-color: #7a2718; }
+  .site-label::before { border-right-color: #7a2718; }
 </style>
 </head>
 <body>
@@ -35,54 +47,107 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// --- reference rings around CENTER ---------------------------------------
 // Larger circle first so the darker 3 mi ring draws on top of it.
 const fiveMile = L.circle(CENTER, {
   radius: 5 * MILE_IN_METERS,
-  color: '#7fce8b',
-  weight: 2,
-  fillColor: '#7fce8b',
-  fillOpacity: 0.18
+  color: '#7fce8b', weight: 2, fillColor: '#7fce8b', fillOpacity: 0.18
 }).addTo(map).bindPopup('5 mile radius');
 
-const threeMile = L.circle(CENTER, {
+L.circle(CENTER, {
   radius: 3 * MILE_IN_METERS,
-  color: '#1b6b3a',
-  weight: 2,
-  fillColor: '#1b6b3a',
-  fillOpacity: 0.25
+  color: '#1b6b3a', weight: 2, fillColor: '#1b6b3a', fillOpacity: 0.25
 }).addTo(map).bindPopup('3 mile radius');
 
-// Texas Crushed Stone, Georgetown Quarry (TCEQ RN102016482).
-// Coords and water use are from the TWDB/TCEQ aggregate mining water use
-// survey, Appendix III, reporting year 2019.
-const quarry = L.circleMarker([30.576111, -97.696666], {
-  radius: 9,
-  color: '#7a2718',
-  weight: 2,
-  fillColor: '#d1502f',
-  fillOpacity: 0.9
-}).addTo(map);
+// --- water use sites ------------------------------------------------------
+const SITES = [
+  {
+    name: 'Texas Crushed Stone',
+    sub: 'Georgetown Quarry &middot; TCEQ RN102016482',
+    lat: 30.576111, lon: -97.696666,
+    label: 'Texas Crushed Stone<br>361M gal/yr',
+    quality: 'reported',
+    rows: [
+      ['Total', '1,106.82 acre-feet (2019)'],
+      ['Gallons', '~361 million/yr'],
+      ['Per day', '~988,000 gal'],
+      ['Source', 'Groundwater, 1,105.64 AF (99.9%)'],
+      ['', 'Surface water 1.17 AF (0.1%)']
+    ],
+    note: 'Single largest aggregate water user in Williamson County ' +
+          '&mdash; ~85% of the county total (1,308 AF).',
+    sources: [
+      ['TWDB/TCEQ Aggregate Mining Water Use, App. III (Table 3-2)',
+       'https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF'],
+      ['TWDB Mining Water Use, App. IV (county projections)',
+       'https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF'],
+      ['USGS water-use site 948491085135000',
+       'https://waterdata.usgs.gov/monitoring-location/USGS-948491085135000/'],
+      ['Texas Crushed Stone Co.', 'https://www.texascrushedstoneco.com/']
+    ]
+  },
+  {
+    name: 'Cimarron Hills Golf &amp; CC',
+    sub: '18-hole Nicklaus course &middot; Georgetown',
+    lat: 30.648033, lon: -97.7896178,
+    label: 'Cimarron Hills<br>~53M gal/yr (est.)',
+    quality: 'estimated',
+    rows: [
+      ['Total', '~162 acre-feet/yr (est.)'],
+      ['Range', '135&ndash;225 AF (44&ndash;73M gal)'],
+      ['Gallons', '~53 million/yr'],
+      ['Per day', '~145,000 gal'],
+      ['Source', 'Reclaimed water (treated effluent)'],
+      ['', 'City of Georgetown purple-pipe system']
+    ],
+    note: 'No facility-level figure is published. Estimated from a 131-acre ' +
+          'course polygon (~90 ac irrigated turf) &times; ~1.8 AF/acre, derived from ' +
+          'Central Texas ET and rainfall. The <em>source</em> is documented: all six ' +
+          'Georgetown golf courses irrigate with reclaimed water, and the Cimarron ' +
+          'Hills system was built by the developer.',
+    sources: [
+      ['City of Georgetown &mdash; Water Resources FAQ (reclaimed water)',
+       'https://georgetowntexas.gov/utilities/water/resources/faqs/index.php'],
+      ['GCSAA Water Use on U.S. Golf Courses, Phase III (2022)',
+       'https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf'],
+      ['TWDB BMP 5.2 &mdash; Golf Course Conservation',
+       'https://www.twdb.texas.gov/conservation/BMPs/Mun/doc/5.2.pdf'],
+      ['Course boundary: OSM way/104049185',
+       'https://www.openstreetmap.org/way/104049185']
+    ]
+  }
+];
 
-quarry.bindTooltip('Texas Crushed Stone &mdash; 361M gal/yr', {
-  permanent: true,
-  direction: 'right',
-  offset: [10, 0],
-  className: 'quarry-label'
+const markers = SITES.map(s => {
+  const circle = L.circle([s.lat, s.lon], {
+    radius: 0.5 * MILE_IN_METERS,
+    color: '#7a2718', weight: 2, fillColor: '#d1502f', fillOpacity: 0.35
+  }).addTo(map);
+
+  circle.bindTooltip(s.label, {
+    permanent: true, direction: 'right', offset: [12, 0], className: 'site-label'
+  });
+
+  const rows = s.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  const srcs = s.sources
+    .map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`)
+    .join('');
+
+  circle.bindPopup(
+    `<h3>${s.name}</h3>` +
+    `<div class="sub">${s.sub}</div>` +
+    `<span class="badge ${s.quality}">${s.quality}</span>` +
+    `<dl style="margin-top:8px">${rows}</dl>` +
+    `<div style="font-size:12px;color:#444;margin-bottom:8px">${s.note}</div>` +
+    `<div class="srcs"><strong>Sources</strong><br>${srcs}</div>`,
+    { maxWidth: 320 }
+  );
+
+  return circle;
 });
 
-quarry.bindPopup(
-  '<strong>Texas Crushed Stone Co.</strong><br>' +
-  'Georgetown Quarry (TCEQ RN102016482)<br><br>' +
-  '<strong>2019 water use:</strong> 1,106.82 acre-feet<br>' +
-  '&asymp; 361 million gallons/yr (~988,000 gal/day)<br><br>' +
-  '<strong>Source:</strong> 99.9% groundwater (1,105.64 AF)<br>' +
-  'Surface water: 1.17 AF (0.1%)<br><br>' +
-  '<em>TWDB/TCEQ aggregate mining water use survey, 2019</em>'
-);
-
-// Frame the rings and the quarry together - the quarry sits ~8.4 mi east,
-// outside the 5 mi ring, so fitting only the circles would push it off-screen.
-map.fitBounds(L.featureGroup([fiveMile, quarry]).getBounds().pad(0.15));
+// Frame the rings and both sites together.
+map.fitBounds(L.featureGroup([fiveMile, ...markers]).getBounds().pad(0.08));
 
 fetch('points.json')
   .then(r => r.ok ? r.json() : [])

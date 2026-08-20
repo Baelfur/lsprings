@@ -34,21 +34,44 @@ None to install. Python 3 standard library; Leaflet from CDN.
 
 ## Map contents
 
-- Two radius rings around `CENTER` (30.580361, -97.837383): 3 mi dark green, 5 mi light green.
-- **Texas Crushed Stone, Georgetown Quarry** (30.576111, -97.696666) — TCEQ RN102016482,
-  about 8.4 mi east of center, outside the 5 mi ring.
+Two reference rings around `CENTER` (30.580361, -97.837383): 3 mi dark green, 5 mi light green.
+Two water-use sites, each drawn as a **half-mile red circle** with a label and a popup
+carrying the figures and source links.
 
-### Texas Crushed Stone water use
+### Texas Crushed Stone — Georgetown Quarry
 
-Reported figure, not an estimate:
+30.576111, -97.696666 · TCEQ RN102016482 · **reported figure**
 
-| | 2019 |
+| | |
 |---|---|
-| Total | 1,106.82 acre-feet |
+| Total | 1,106.82 acre-feet (2019) |
 | Groundwater | 1,105.64 AF (99.9%) |
 | Surface water | 1.17 AF (0.1%) |
-| Approx. gallons | 361 million/yr (~988,000/day) |
+| Approx. | 361 million gal/yr (~988,000/day) |
 
-Source: [TWDB/TCEQ Aggregate Mining Industry Water Use, Appendix III](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF),
-Table 3-2, reporting year 2019. This single site is ~85% of all aggregate-mining
-water use in Williamson County (county total: 1,308 AF).
+~85% of all aggregate-mining water use in Williamson County (county total 1,308 AF).
+
+Sources: [TWDB/TCEQ Aggregate Mining Water Use App. III](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20III%20Jun%2015%202022.PDF) ·
+[App. IV](https://www.twdb.texas.gov/waterplanning/data/projections/MiningStudy/doc/Final%20TWDB%20Mining%20Water%20Use%20Appendix%20IV%20Jun%2015%202022.PDF) ·
+[USGS site](https://waterdata.usgs.gov/monitoring-location/USGS-948491085135000/)
+
+### Cimarron Hills Golf & Country Club
+
+30.648033, -97.789618 · **estimated volume, documented source**
+
+| | |
+|---|---|
+| Total | ~162 acre-feet/yr (range 135–225) |
+| Approx. | ~53 million gal/yr (~145,000/day) |
+| Source | Reclaimed water — City of Georgetown |
+
+No facility-level volume is published. Estimate = 131-acre course polygon
+(OSM way/104049185) → ~90 ac irrigated turf × ~1.8 AF/acre, where the rate comes from
+Central Texas ET (ETo ~62 in × Kc 0.60) less effective rainfall, at 75% irrigation
+efficiency. The **source** is documented, not estimated: all six Georgetown golf courses
+irrigate with reclaimed water.
+
+Sources: [Georgetown Water Resources FAQ](https://georgetowntexas.gov/utilities/water/resources/faqs/index.php) ·
+[GCSAA Phase III water report](https://www.gcsaa.org/docs/default-source/environment/22_waterreport_web.pdf) ·
+[TWDB BMP 5.2](https://www.twdb.texas.gov/conservation/BMPs/Mun/doc/5.2.pdf) ·
+[OSM way/104049185](https://www.openstreetmap.org/way/104049185)
