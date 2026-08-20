@@ -68,7 +68,7 @@ Two caveats the headline number hides:
   apartments at ~150 gpd/unit is ~202 AF/yr on its own — roughly 24× the lagoon figure,
   before hotel, retail, and office. *(That multiplier is our arithmetic, not from their studies.)*
 - **~25 in/yr over 4 acres** is at or just below ordinary Central Texas net evaporation
-  (~26–36 in/yr), before crediting the claimed 50–80% water reduction. Plausible, but
+  (~26–36 in/yr), before crediting the claimed 50–80% evaporation reduction from VVater's technology. Plausible, but
   not conservative. The city backup allowance (200,000 gal/day × ~90 days ≈ 55 AF) is
   ~6× the claimed annual loss.
 
