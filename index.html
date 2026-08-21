@@ -41,11 +41,15 @@
     font: 11px/1.35 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
     width: 268px;
   }
-  .scale-key summary { cursor: pointer; list-style: none; }
-  .scale-key summary::-webkit-details-marker { display: none; }
-  .scale-key summary::after { content: ' ▴'; color: #888; }
-  .scale-key details:not([open]) summary::after { content: ' ▾'; }
+  .scale-key summary, .legend summary { cursor: pointer; list-style: none; }
+  .scale-key summary::-webkit-details-marker,
+  .legend summary::-webkit-details-marker { display: none; }
+  .scale-key summary::after, .legend summary::after { content: ' ▴'; color: #888; }
+  .scale-key details:not([open]) summary::after,
+  .legend details:not([open]) summary::after { content: ' ▾'; }
   .scale-key b { display: inline; font-size: 12px; }
+  .legend summary b { display: inline; margin: 0; }
+  .card-short { display: none; }
   .scale-key .note { color: #666; margin-bottom: 6px; }
   .scale-key table { border-collapse: collapse; width: 100%; }
   .scale-key td { padding: 1px 0; vertical-align: middle; }
@@ -93,9 +97,39 @@
               margin-right: 6px; vertical-align: -2px; border-radius: 50%; }
   .leaflet-control-layers { font: 12px/1.5 system-ui, sans-serif; }
   .leaflet-control-layers b { display: block; margin: 2px 0 4px; }
+  .leaflet-control-layers-toggle { display: none; }
+  .lc-details summary { cursor: pointer; list-style: none; padding: 1px 0 2px; }
+  /* The control's own `b` rule is display:block for the section headings; the
+     summary's title must stay inline or the caret drops to its own line. */
+  .lc-details summary b { display: inline; margin: 0; }
+  .lc-details summary::-webkit-details-marker { display: none; }
+  .lc-details summary::after { content: ' ▴'; color: #888; }
+  .lc-details:not([open]) summary::after { content: ' ▾'; }
+  .lc-details .leaflet-control-layers-list { max-height: 60vh; overflow-y: auto; }
   .leaflet-control-layers-list i {
     width: 12px; height: 12px; display: inline-block;
     margin-right: 5px; vertical-align: -2px; border-radius: 2px; opacity: 0.75;
+  }
+
+  /* Narrow or short screens: the cards are 268px fixed, so two of them are
+     wider than a phone and cover the map even collapsed. Here they shrink to
+     their title bar, open on tap, and scroll inside a capped height. Keep this
+     query in step with WIDE in the script. */
+  @media (max-width: 799px), (max-height: 599px) {
+    .card-full { display: none; }
+    .card-short { display: inline; }
+    .scale-key { width: auto; max-width: calc(100vw - 24px); }
+    .legend { max-width: calc(100vw - 24px); }
+    .scale-key summary, .legend summary { padding: 3px 0; }
+    .scale-key details[open] {
+      width: 258px; max-width: 100%;
+      max-height: 42vh; overflow-y: auto; overscroll-behavior: contain;
+    }
+    .legend details[open] { max-height: 42vh; overflow-y: auto; overscroll-behavior: contain; }
+    /* Keep the title visible while the body scrolls, so it stays closable. */
+    .scale-key details[open] summary, .legend details[open] summary {
+      position: sticky; top: 0; background: rgba(255,255,255,0.94);
+    }
   }
 </style>
 </head>
@@ -121,6 +155,12 @@ const vsLagoon = af => {
 // a stray < in a note would silently break the popup it lands in.
 const esc = s => String(s).replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// The keys are wide cards. On a phone an open one buries the map, so below this
+// breakpoint each starts collapsed to its title bar and opens on tap, and the
+// layer control uses Leaflet's own collapsed mode. Must match the media query
+// in the stylesheet.
+const WIDE = window.matchMedia('(min-width: 800px) and (min-height: 600px)');
 
 const map = L.map('map').setView(CENTER, 11);
 
@@ -255,6 +295,7 @@ document.addEventListener('click', ev => {
 // Keep every open button honest when the layer control is used instead.
 map.on('overlayadd overlayremove', () => {
   document.querySelectorAll('.aq-btn').forEach(refreshAqBtn);
+  decorateLayerList();
 });
 
 // --- water use sites ------------------------------------------------------
@@ -541,12 +582,46 @@ const subjectLayer = L.layerGroup([leanderSprings]).addTo(map);
 const sitesLayer   = L.layerGroup(markers).addTo(map);
 const pumpageLayer = L.layerGroup(gwMarkers).addTo(map);
 
-const layerControl = L.control.layers(null, {
+const FEATURE_OVERLAYS = {
   'Leander Springs': subjectLayer,
   'Water use sites': sitesLayer,
   'Groundwater pumpage': pumpageLayer,
   '3 / 5 mile rings': ringsLayer
-}, { collapsed: false, position: 'topright' }).addTo(map);
+};
+
+// Leaflet's own collapsed mode opens on mouseenter and closes on mouseleave.
+// A touch tap synthesises only half of that -- touchstart, touchend, mouseenter,
+// no click -- so it expanded and instantly collapsed again, leaving the button
+// dead on a phone. Use the same <details> the cards use: one mechanism, and a
+// real tap target on every device.
+const layerControl = L.control.layers(null, FEATURE_OVERLAYS,
+  { collapsed: false, position: 'topright' }).addTo(map);
+
+{
+  const c = layerControl.getContainer();
+  const section = c.querySelector('.leaflet-control-layers-list');
+  const d = L.DomUtil.create('details', 'lc-details');
+  d.innerHTML = '<summary><b>Layers</b></summary>';
+  // expand() may have written an inline height; the stylesheet caps it now.
+  section.style.height = '';
+  d.appendChild(section);
+  c.appendChild(d);
+}
+
+// Leaflet rebuilds the overlay list's innerHTML on every layer add or remove,
+// which throws away headings inserted into it -- so a popup's aquifer button
+// silently stripped them. Re-apply after each rebuild instead of once, and
+// clear first so an update Leaflet skipped cannot double them up.
+function decorateLayerList() {
+  const list = layerControl.getContainer()
+    .querySelector('.leaflet-control-layers-overlays');
+  if (!list) return;
+  Array.from(list.children).forEach(el => { if (el.tagName === 'B') el.remove(); });
+  const featureRows = Object.keys(FEATURE_OVERLAYS).length;
+  if (list.children.length <= featureRows) return;   // aquifers not loaded yet
+  list.children[featureRows - 1].insertAdjacentHTML('afterend', '<b>Aquifer extents</b>');
+  list.insertAdjacentHTML('afterbegin', '<b>Map features</b>');
+}
 
 // --- aquifer extents ------------------------------------------------------
 // aquifers.json is optional: absent, the map is exactly what it was. Build it
@@ -557,10 +632,6 @@ fetch('aquifers.json')
   .then(r => r.ok ? r.json() : null)
   .then(data => {
     if (!data || !Array.isArray(data.aquifers) || !data.aquifers.length) return;
-    // Count the feature rows before adding any aquifer, so the divider lands in
-    // the right place even if a fifth group is added above.
-    const list = document.querySelector('.leaflet-control-layers-overlays');
-    const featureRows = list ? list.children.length : 0;
     data.aquifers.forEach(a => {
       // Outcrop reads as the solid one because it is the part at the surface.
       // Downdip is the same aquifer continuing underneath younger rock, so it
@@ -615,10 +686,7 @@ fetch('aquifers.json')
       (aquiferLayers[base] = aquiferLayers[base] || {})[a.part] = layer;
       layerControl.addOverlay(layer, `<i style="${swatch}"></i>${esc(a.name)}`);
     });
-    if (list && featureRows) {
-      list.children[featureRows - 1].insertAdjacentHTML('afterend', '<b>Aquifer extents</b>');
-      list.insertAdjacentHTML('afterbegin', '<b>Map features</b>');
-    }
+    decorateLayerList();
   })
   .catch(err => console.error('failed to load aquifers.json', err));
 
@@ -683,7 +751,8 @@ scaleKey.onAdd = function () {
            `<td class="x">${vsLagoon(r.af)}&times;</td></tr>`;
   }).join('');
   d.innerHTML =
-    '<details open><summary><b>Scale &mdash; acre-feet per year</b></summary>' +
+    '<details><summary><b><span class="card-full">Scale &mdash; acre-feet per year</span>' +
+    '<span class="card-short">Scale</span></b></summary>' +
     '<div class="note">bars log-scaled &middot; chip = what supplies it</div>' +
     `<table>${rows}</table>` +
     `<div class="totals">${totals}</div>` +
@@ -741,7 +810,8 @@ gpmKey.onAdd = function () {
            `</div></td></tr>`;
   }).join('');
   d.innerHTML =
-    '<details open><summary><b>Flow rate &mdash; gallons per minute</b></summary>' +
+    '<details><summary><b><span class="card-full">Flow rate &mdash; gallons per minute</span>' +
+    '<span class="card-short">Flow rate</span></b></summary>' +
     '<div class="note">bars log-scaled &middot; <i>italic</i> = everyday reference</div>' +
     `<table>${rows}</table>` +
     '<div class="foot">Site rates are <b>continuous equivalent</b> &mdash; the year&rsquo;s ' +
@@ -757,14 +827,44 @@ const legend = L.control({ position: 'bottomleft' });
 legend.onAdd = function () {
   const d = L.DomUtil.create('div', 'legend');
   d.innerHTML =
-    '<b>Water use, acre-feet/yr</b>' +
+    '<details><summary><b><span class="card-full">Water use, acre-feet/yr</span>' +
+    '<span class="card-short">Key</span></b></summary>' +
     '<i style="background:#2b7fd4"></i>Leander Springs &mdash; developer est.<br>' +
     '<i style="background:#d1502f"></i>Reported / estimated user<br>' +
     '<i style="background:#7d5bb5;border:1px dashed #4a2f78"></i>Verified groundwater pumpage (2024)<br>' +
-    '<i style="background:#7fc9e8;border:1px solid #1f7fa8"></i>3 / 5 mile rings';
+    '<i style="background:#7fc9e8;border:1px solid #1f7fa8"></i>3 / 5 mile rings' +
+    '</details>';
+  // It takes taps now, so keep them off the map underneath.
+  L.DomEvent.disableClickPropagation(d);
   return d;
 };
 legend.addTo(map);
+
+// --- card open/closed state ----------------------------------------------
+// Every card is authored closed; this is what opens them on a big screen, so a
+// phone never paints an open card and then snaps it shut.
+const cards = () => document.querySelectorAll('.scale-key details, .legend details, .lc-details');
+
+function applyCardState() {
+  cards().forEach(d => { d.open = WIDE.matches; });
+}
+applyCardState();
+
+// Rotating a phone or dragging a window edge crosses the breakpoint both ways.
+function onBreakpoint() {
+  applyCardState();
+}
+if (WIDE.addEventListener) WIDE.addEventListener('change', onBreakpoint);
+else WIDE.addListener(onBreakpoint);           // Safari < 14
+
+// On a small screen there is no room for two open cards, so they behave as an
+// accordion. `toggle` does not bubble, hence the capture-phase listener.
+document.addEventListener('toggle', ev => {
+  const d = ev.target;
+  if (!d.open || WIDE.matches || !d.closest) return;
+  if (!d.closest('.scale-key, .legend, .leaflet-control-layers')) return;
+  cards().forEach(o => { if (o !== d) o.open = false; });
+}, true);
 
 // Frame the rings and every site together.
 const extent = L.featureGroup([fiveMile, leanderSprings, ...markers, ...gwMarkers]).getBounds().pad(0.08);

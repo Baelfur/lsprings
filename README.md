@@ -15,6 +15,15 @@ Everything on the map is grouped into toggles in the top-right control: the four
 feature groups (Leander Springs, water use sites, groundwater pumpage, the rings)
 and one entry per aquifer extent.
 
+The layer control and the three keys are all the same collapsible card. Above
+`800 x 600` they open on load, as they always have. Below that — any phone, and
+a short laptop window — each starts collapsed to its title bar and opens on tap,
+because the keys are 268px fixed and two of them side by side are wider than a
+phone, so they buried the map. Opening one on a small screen closes the others,
+and an open card scrolls inside a capped height rather than running off-screen.
+The breakpoint lives in two places that must agree: `WIDE` in the script and the
+`@media` block in the stylesheet.
+
 The 3 and 5 mile rings are context, not data, and are drawn in a light blue nothing else on the map uses. They draw in their own pane between the
 aquifer washes and the site circles, so nothing ever hides behind them, and each ring is
 two paths: an inert filled wash (`interactive: false`, so the square miles it covers never
