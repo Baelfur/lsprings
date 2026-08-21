@@ -267,11 +267,26 @@ the curve their own numbers already sit on.
 s(r, t) = 3.175 + 1.200·log₁₀(t) + 2.400·log₁₀(5280 / r_ft)
 ```
 
-**It is bounded on purpose.** Cooper-Jacob has no natural zero — extended far enough this model
-still reads 2.5 ft at ten miles and does not reach zero until ~115 miles, which is nonsense;
-real aquifer boundaries truncate it. So the tool refuses to answer beyond **3 miles**, and
-below **250 ft** where near-well effects dominate. Both refusals explain themselves rather
-than printing a confident number.
+**Confidence degrades with distance, in three bands** rather than at a cliff:
+
+| Distance | Behaviour |
+|---|---|
+| under 250 ft | No figure — near-well effects dominate |
+| 250 ft – 2 mi | Figures, straightforwardly |
+| 2 – 5 mi | Same figures, flagged with how many times further out than the anchor you are |
+| over 5 mi | **No figure at all** |
+
+The old version had a single 3-mile cliff and, worse, said "no number is given" and then quoted
+one — which invites the reader to use it anyway. It also justified the cap by claiming the
+model was physically absurd at distance. That was wrong: a confined aquifer transmits
+*pressure*, not dewatering, so a cone tens of miles wide over 30 years is ordinary. Backing the
+developer's own numbers out gives a transmissivity of about 185 ft²/day, which is unremarkable
+for a confined sandstone, and a radius of influence of 13–117 miles depending on storativity.
+
+The real reason to stop answering is **boundaries**. Cooper-Jacob assumes an aquifer with no
+edges. This one has the Balcones Fault Zone running alongside it and the Trinity outcrop
+recharge boundary to the west, and either truncates the cone by an amount a single published
+distance cannot tell us.
 
 **Privacy.** Addresses go to OpenStreetMap's public Nominatim geocoder to become coordinates,
 bounded to the map's own viewbox so a bare street name cannot resolve to another state.

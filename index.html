@@ -967,7 +967,8 @@ const DD = {
   perLogYear: 1.200,
   perLogDist: 2.400,         // per tenfold change in distance
   minFt: 250,                // inside this, near-well effects dominate
-  maxFt: 3 * 5280            // past this the extrapolation is not defensible
+  softFt: 2 * 5280,          // past this, still answer but say how far out it is
+  hardFt: 5 * 5280           // past this, boundaries dominate and no number is honest
 };
 const drawdownAt = (rFt, yr) =>
   DD.intercept + DD.perLogYear * Math.log10(yr) + DD.perLogDist * Math.log10(5280 / rFt);
@@ -1018,12 +1019,15 @@ function renderEstimate(lat, lon, depth, label) {
       out.push('<div class="wi-verdict mid">Closer than ' + DD.minFt + ' ft. Near-well ' +
         'effects dominate here and a curve fitted to a one-mile figure says nothing ' +
         'useful. This needs a real assessment.</div>');
-    } else if (ft > DD.maxFt) {
-      out.push('<div class="wi-verdict mid">Beyond 3 miles. The developer published ' +
-        'drawdown at one mile only; stretching that curve this far is not defensible, ' +
-        'so no number is given. For scale, the model would still read about ' +
-        drawdownAt(Math.min(ft, 10 * 5280), 30).toFixed(1) + ' ft here &mdash; which is ' +
-        'mostly a sign the model has no natural zero, not a prediction.</div>');
+    } else if (ft > DD.hardFt) {
+      // No number at all here. Printing one alongside "this is not defensible"
+      // just invites the reader to use it anyway.
+      out.push('<div class="wi-verdict mid"><b>Too far out to answer</b><br>' +
+        `At ${miles.toFixed(1)} miles this stops being an extrapolation and becomes a ` +
+        'guess, so no figure is given. The curve assumes an aquifer with no edges. The ' +
+        'real one has the Balcones Fault Zone running alongside it and the Trinity ' +
+        'outcrop recharge boundary to the west, and either truncates the drawdown cone ' +
+        'by an amount one published distance cannot tell us.</div>');
     } else {
       const rows = [1, 10, 30].map(yr =>
         `<tr><td>${yr} year${yr > 1 ? 's' : ''}</td><td>${drawdownAt(ft, yr).toFixed(1)} ft</td></tr>`
@@ -1032,6 +1036,10 @@ function renderEstimate(lat, lon, depth, label) {
       out.push('<div class="wi-fine">Water level in the <b>producing interval</b>, not the ' +
         'depth of your pump. Extrapolated from the developer&rsquo;s one-mile figures ' +
         '(3.2 / 4.3 / 5.0 ft) on the Cooper-Jacob curve their own numbers follow.</div>');
+      if (ft > DD.softFt) out.push('<div class="wi-verdict mid">Read this loosely. It is ' +
+        `${(ft / 5280).toFixed(1)}&times; further out than the one distance the developer ` +
+        'published, on a curve fitted to that single anchor, and nothing here accounts ' +
+        'for the fault zone or the recharge boundary west of you.</div>');
       if (!depth) out.push('<div class="wi-fine">No depth entered, so this assumes your ' +
         'well reaches the same interval. Enter a depth to check that.</div>');
     }
