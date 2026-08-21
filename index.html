@@ -311,10 +311,42 @@ function fitPopup(p) {
 
   p.options.autoPanPaddingTopLeft = L.point(WIDE.matches ? 12 : 54, 12);
   p.options.autoPanPaddingBottomRight = L.point(12, 12);
-  if (p.options.maxHeight === maxHeight && p.options.maxWidth === maxWidth) return;
-  p.options.maxHeight = maxHeight;
-  p.options.maxWidth = maxWidth;
-  p.update();
+  if (p.options.maxHeight !== maxHeight || p.options.maxWidth !== maxWidth) {
+    p.options.maxHeight = maxHeight;
+    p.options.maxWidth = maxWidth;
+    p.update();
+  }
+  // Leaflet's autoPan already ran, while the popup was still its unclamped
+  // height -- on a short viewport that leaves the box anchored above the top
+  // edge, and no amount of scrolling the content reaches the title, because it
+  // is the box that is off-screen, not the content that is scrolled. Re-check
+  // once the resize has laid out and nudge the map if the top is still clipped.
+  // Twice: once as soon as the resize lays out, and once after Leaflet's own
+  // autoPan animation (250ms) has finished, or that animation lands last and
+  // undoes the correction. Both calls no-op when the popup already fits.
+  requestAnimationFrame(() => nudgeIntoView(p));
+  setTimeout(() => nudgeIntoView(p), 320);
+}
+
+function nudgeIntoView(p) {
+  const el = p.getElement();
+  if (!el || !map.hasLayer(p)) return;
+  const pad = 12;
+  const mapTop = map.getContainer().getBoundingClientRect().top;
+  const box = el.getBoundingClientRect();
+  const top = box.top - mapTop;
+  const bottom = top + box.height;
+  const mapH = map.getSize().y;
+
+  // Top wins when the popup is taller than the viewport: a clipped title is
+  // unreachable, while a clipped bottom is still reachable by scrolling the
+  // content. Only chase the bottom when doing so cannot push the top off.
+  let dy = 0;
+  if (top < pad) dy = top - pad;
+  else if (bottom > mapH - pad && box.height <= mapH - pad * 2) {
+    dy = bottom - (mapH - pad);
+  }
+  if (dy) map.panBy([0, Math.round(dy)], { animate: false });
 }
 
 map.on('popupopen', e => {

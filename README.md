@@ -32,6 +32,15 @@ parks a nearly-screen-wide popup at x=0 and the zoom buttons cover the title.
 The aquifer button sits directly under the badge, above the figures, so it is
 reachable without scrolling the popup at all.
 
+Capping the height is not enough on its own: Leaflet's autoPan has already run by
+then, against the popup's unclamped height, so on a short viewport the box ends up
+anchored above the top edge. Scrolling the content cannot recover the title, because
+it is the box that is off-screen, not the content that is scrolled. `nudgeIntoView`
+re-checks after the resize lays out and pans the map if an edge is still clipped —
+twice, once on the next frame and once after Leaflet's own 250ms pan animation, or
+that animation lands last and undoes the correction. Top wins over bottom: a clipped
+title is unreachable, a clipped bottom is still reachable by scrolling.
+
 The 3 and 5 mile rings are context, not data, and are drawn in a light blue nothing else on the map uses. They draw in their own pane between the
 aquifer washes and the site circles, so nothing ever hides behind them, and each ring is
 two paths: an inert filled wash (`interactive: false`, so the square miles it covers never
