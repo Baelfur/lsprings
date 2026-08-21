@@ -16,6 +16,11 @@
   .leaflet-popup-content dd { margin: 0; font-variant-numeric: tabular-nums; }
   .leaflet-popup-content .srcs { border-top: 1px solid #ddd; padding-top: 6px; font-size: 12px; }
   .leaflet-popup-content .srcs a { display: block; margin-bottom: 2px; }
+  /* Leaflet adds this class once a popup hits its maxHeight. Make it scroll
+     like a native pane and stop the scroll chaining out to the map behind. */
+  .leaflet-popup-scrolled {
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  }
   .badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 11px;
            font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
   .badge.reported  { background: #1b6b3a; color: #fff; }
@@ -62,7 +67,7 @@
   .scale-key .totals .v { margin-left: auto; font-variant-numeric: tabular-nums; }
   .aq-btn {
     font: 600 12px/1 system-ui, sans-serif; cursor: pointer;
-    padding: 6px 9px; margin-bottom: 8px; width: 100%;
+    padding: 7px 9px; margin: 8px 0; width: 100%;
     border: 1px solid var(--c); border-radius: 3px;
     background: #fff; color: var(--c); text-align: left;
   }
@@ -74,7 +79,7 @@
   .aq-btn.on::before { background: #fff; }
   .aq-btn:disabled { border-color: #ccc; color: #888; cursor: default; }
   .aq-btn:disabled::before { background: #ccc; }
-  .aq-note { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .aq-note { font-size: 12px; color: #555; margin: 8px 0; }
   .aq-note i { width: 9px; height: 9px; border-radius: 2px; display: inline-block;
                margin-right: 5px; vertical-align: -1px; }
   .scale-key td.af  { text-align: right; font-variant-numeric: tabular-nums;
@@ -280,10 +285,45 @@ function sourceControl(key, part) {
          `style="--c:${s.color}">Show ${esc(s.label)} ${esc(part || 'extent')}</button>`;
 }
 
+// A popup taller than the screen had nothing to scroll -- it simply ran off the
+// bottom, and dragging inside it panned the map. Cap it against the current
+// viewport and Leaflet's own scrolled-popup mode takes over. Measured on open,
+// not at bind time, so it follows rotation and window size.
+let openPopup = null;
+
+function fitPopup(p) {
+  if (!p) return;
+  const el = p.getElement();
+  if (!el) return;
+  if (p._authoredMaxWidth === undefined) p._authoredMaxWidth = p.options.maxWidth;
+
+  // maxWidth sizes the content, but what has to fit the screen is the whole
+  // box. Measure the wrapper's padding and border rather than assume it.
+  const content = el.querySelector('.leaflet-popup-content');
+  const chrome = content ? Math.max(0, el.offsetWidth - content.offsetWidth) : 0;
+  const size = map.getSize();
+
+  // Leave a gutter for the zoom buttons: without it autoPan parks a
+  // nearly-screen-wide popup at x=0 and they cover the first letter of the title.
+  const gutter = WIDE.matches ? 24 : 76;
+  const maxHeight = Math.max(140, Math.round(size.y * (WIDE.matches ? 0.75 : 0.6)));
+  const maxWidth = Math.max(180, Math.min(p._authoredMaxWidth, size.x - gutter - chrome));
+
+  p.options.autoPanPaddingTopLeft = L.point(WIDE.matches ? 12 : 54, 12);
+  p.options.autoPanPaddingBottomRight = L.point(12, 12);
+  if (p.options.maxHeight === maxHeight && p.options.maxWidth === maxWidth) return;
+  p.options.maxHeight = maxHeight;
+  p.options.maxWidth = maxWidth;
+  p.update();
+}
+
 map.on('popupopen', e => {
+  openPopup = e.popup;
+  fitPopup(openPopup);
   const el = e.popup.getElement();
   if (el) el.querySelectorAll('.aq-btn').forEach(refreshAqBtn);
 });
+map.on('popupclose', () => { openPopup = null; });
 
 document.addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('.aq-btn');
@@ -434,7 +474,8 @@ leanderSprings.bindPopup(
   '<h3>Leander Springs</h3>' +
   '<div class="sub">77.9-acre mixed-use PUD &middot; 4-acre Crystal Lagoon</div>' +
   '<span class="badge developer">developer estimate</span>' +
-  '<dl style="margin-top:8px">' +
+  sourceControl('trinity', 'downdip') +
+  '<dl>' +
     '<dt>Lagoon</dt><dd>9,072 gal/day &mdash; 10.2 acre-feet/yr</dd>' +
     '<dt>Gallons</dt><dd>~3.31 million/yr</dd>' +
     '<dt>Source</dt><dd>On-site well, <strong>Middle Trinity</strong></dd>' +
@@ -472,7 +513,6 @@ leanderSprings.bindPopup(
     'by the density-cut claim, 1,200 apartments draw ~240,000 gal/day of <em>city</em> ' +
     'water &mdash; about 26&times; the well.' +
   '</div>' +
-  sourceControl('trinity', 'downdip') +
   '<div class="srcs"><strong>Sources</strong><br>' +
     '<a href="https://leandersprings.us/" target="_blank" rel="noopener">leandersprings.us &mdash; project FAQ (developer; depth, aquifer, pump test, drawdown)</a>' +
     '<a href="https://communityimpact.com/austin/leander-liberty-hill/development/2026/06/29/lagoon-anchored-leander-springs-development-advances-to-leander-city-council/" target="_blank" rel="noopener">Community Impact &mdash; P&amp;Z approval, Jun 2026</a>' +
@@ -502,9 +542,9 @@ const markers = SITES.map(s => {
     `<h3>${s.name}</h3>` +
     `<div class="sub">${s.sub}</div>` +
     `<span class="badge ${s.quality}">${s.quality}</span>` +
-    `<dl style="margin-top:8px">${rows}</dl>` +
-    `<div style="font-size:12px;color:#444;margin-bottom:8px">${s.note}</div>` +
     sourceControl(s.src, s.part) +
+    `<dl>${rows}</dl>` +
+    `<div style="font-size:12px;color:#444;margin-bottom:8px">${s.note}</div>` +
     `<div class="srcs"><strong>Sources</strong><br>${srcs}</div>`,
     { maxWidth: 320 }
   );
@@ -552,7 +592,8 @@ const gwMarkers = GROUNDWATER.map(g => {
     `<h3>${g.name}</h3>` +
     `<div class="sub">${g.system ? 'System-wide pumpage' : 'Single facility'} &middot; ${g.aq} Aquifer</div>` +
     '<span class="badge pumpage">reported pumpage</span>' +
-    '<dl style="margin-top:8px">' +
+    sourceControl(g.src, g.part) +
+    '<dl>' +
       `<dt>2024</dt><dd>${g.af.toLocaleString()} acre-feet</dd>` +
       `<dt>Gallons</dt><dd>${g.gal}</dd>` +
       `<dt>Wells</dt><dd>${g.wells} reported</dd>` +
@@ -566,7 +607,6 @@ const gwMarkers = GROUNDWATER.map(g => {
           'service area, not a well site.'
         : 'Single reporting facility.') +
     '</div>' +
-    sourceControl(g.src, g.part) +
     '<div class="srcs"><strong>Source</strong><br>' +
       '<a href="https://www3.twdb.texas.gov/apps/reports/WU_REP/SumFinal_CountyPumpage" target="_blank" rel="noopener">TWDB Water Use Survey &mdash; Detailed Groundwater Pumpage by County (Williamson, 2024)</a>' +
       '<a href="https://www.twdb.texas.gov/waterplanning/waterusesurvey/historical-pumpage.asp" target="_blank" rel="noopener">TWDB Historical Groundwater Pumpage</a>' +
@@ -853,6 +893,7 @@ applyCardState();
 // Rotating a phone or dragging a window edge crosses the breakpoint both ways.
 function onBreakpoint() {
   applyCardState();
+  fitPopup(openPopup);
 }
 if (WIDE.addEventListener) WIDE.addEventListener('change', onBreakpoint);
 else WIDE.addListener(onBreakpoint);           // Safari < 14
@@ -883,7 +924,10 @@ window.addEventListener('load', () => {
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => map.invalidateSize({ animate: false }), 150);
+  resizeTimer = setTimeout(() => {
+    map.invalidateSize({ animate: false });
+    fitPopup(openPopup);
+  }, 150);
 });
 
 fetch('points.json')

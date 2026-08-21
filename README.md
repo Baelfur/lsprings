@@ -24,6 +24,14 @@ and an open card scrolls inside a capped height rather than running off-screen.
 The breakpoint lives in two places that must agree: `WIDE` in the script and the
 `@media` block in the stylesheet.
 
+Popups are fitted to the viewport on open, not at bind time, so they follow
+rotation: `fitPopup` caps height against the map size and hands off to Leaflet's
+own scrolled-popup mode, so a popup taller than the phone scrolls inside itself
+instead of running off the bottom. It also reserves a left gutter, or autoPan
+parks a nearly-screen-wide popup at x=0 and the zoom buttons cover the title.
+The aquifer button sits directly under the badge, above the figures, so it is
+reachable without scrolling the popup at all.
+
 The 3 and 5 mile rings are context, not data, and are drawn in a light blue nothing else on the map uses. They draw in their own pane between the
 aquifer washes and the site circles, so nothing ever hides behind them, and each ring is
 two paths: an inert filled wash (`interactive: false`, so the square miles it covers never
