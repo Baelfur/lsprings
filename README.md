@@ -241,6 +241,46 @@ caught the 2006 file naming the Balcones Fault Zone Edwards simply `EDWARDS`, wh
 Simplified outlines are for display. Anything that turns on an exact boundary should go
 back to the TWDB source.
 
+### Estimate impact at your well
+
+A panel in the top-left takes an address (or `lat, lon`) and an optional well depth, drops a
+pin, and reports what the **developer's own drawdown figures** imply at that point.
+
+**Depth decides which answer you get.** The developer's central claim is that production is
+screened 527–737 ft under ~520 ft of Gray Shale, and that wells above that shale are not
+hydraulically connected to the pumping interval:
+
+| Depth | Result |
+|---|---|
+| ≤ 500 ft | Above the aquitard — **their hydrogeology predicts no drawdown at all**, flagged as their conclusion rather than an independent finding |
+| 500–527 ft | Borderline; not resolvable from published figures, needs the well log |
+| ≥ 527 ft | Same interval — drawdown table at 1, 10 and 30 years |
+
+**The model.** The developer published drawdown at exactly one distance: a one-mile perimeter,
+at 3.2 / 4.3 / 5.0 ft. Least squares on those three against log10(years) gives **1.200 ft per
+decade of time** and reproduces all three within 0.08 ft. Cooper-Jacob drawdown in a confined
+aquifer goes as log(t / r²), which fixes the distance coefficient at exactly twice the time
+coefficient — 2.400 ft per tenfold change in distance. That is not an extra assumption; it is
+the curve their own numbers already sit on.
+
+```
+s(r, t) = 3.175 + 1.200·log₁₀(t) + 2.400·log₁₀(5280 / r_ft)
+```
+
+**It is bounded on purpose.** Cooper-Jacob has no natural zero — extended far enough this model
+still reads 2.5 ft at ten miles and does not reach zero until ~115 miles, which is nonsense;
+real aquifer boundaries truncate it. So the tool refuses to answer beyond **3 miles**, and
+below **250 ft** where near-well effects dominate. Both refusals explain themselves rather
+than printing a confident number.
+
+**Privacy.** Addresses go to OpenStreetMap's public Nominatim geocoder to become coordinates,
+bounded to the map's own viewbox so a bare street name cannot resolve to another state.
+Nothing is stored, nothing is sent anywhere else, and nothing goes into the page URL. Typing
+coordinates skips the geocoder entirely, and the panel says so.
+
+This is **not a well assessment**. It extrapolates three published numbers and cannot see a
+well log, the local faulting, or which unit a well is actually screened in.
+
 ### Tying each user to what supplies it
 
 The aquifer name used to live only in popup prose, so nothing on screen connected a well to

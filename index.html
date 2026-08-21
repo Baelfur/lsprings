@@ -93,6 +93,44 @@
   .scale-key .ref td.nm { color: #666; font-style: italic; }
   .scale-key .foot  { color: #666; margin-top: 6px; border-top: 1px solid #ddd;
                       padding-top: 5px; }
+  /* Sits in the top-left column above the legend and scale key. With a result
+     rendered it is tall enough to reach them, so cap it and let it scroll, and
+     keep it above them so an overlap is never text printed over text. */
+  .wi-card { width: 280px; }
+  /* Leaflet's corner containers are siblings at the same z-index, so the
+     bottom-left stack paints over anything the top-left column grows into --
+     a z-index on the card itself cannot escape its corner. Raise the corner. */
+  .leaflet-top.leaflet-left { z-index: 1001; }
+  .wi-card details {
+    max-height: 58vh; overflow-y: auto; overscroll-behavior: contain;
+  }
+  .wi-card details[open] summary {
+    position: sticky; top: 0; background: rgba(255,255,255,0.96); z-index: 1;
+  }
+  .wi-card label { display: block; margin: 6px 0 2px; color: #444; font-size: 11px; }
+  .wi-card input {
+    width: 100%; box-sizing: border-box; font: 12px system-ui, sans-serif;
+    padding: 5px 6px; border: 1px solid #bbb; border-radius: 3px;
+  }
+  .wi-card input:focus { outline: 2px solid #2b7fd4; outline-offset: -1px; }
+  .wi-row { display: flex; gap: 6px; margin: 8px 0; }
+  .wi-row button {
+    flex: 1; font: 600 12px system-ui, sans-serif; padding: 6px 8px; cursor: pointer;
+    border: 1px solid #bbb; border-radius: 3px; background: #fff; color: #333;
+  }
+  .wi-row .wi-primary { background: #2b7fd4; border-color: #1a5f9e; color: #fff; }
+  .wi-res { border-top: 1px solid #ddd; padding-top: 6px; }
+  .wi-dist { font-size: 12px; margin-bottom: 2px; }
+  .wi-where { color: #666; margin-bottom: 6px; }
+  .wi-verdict { font-size: 11px; line-height: 1.4; padding: 6px 7px; border-radius: 3px; margin-bottom: 6px; }
+  .wi-verdict.shallow { background: #eaf5ec; border-left: 3px solid #1b6b3a; }
+  .wi-verdict.mid { background: #fdf3e3; border-left: 3px solid #b26a00; }
+  .wi-table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
+  .wi-table th { text-align: left; color: #666; font-weight: 600; border-bottom: 1px solid #ddd; }
+  .wi-table td { padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .wi-table td:last-child { text-align: right; font-weight: 600; }
+  .wi-fine { font-size: 11px; color: #555; line-height: 1.4; margin-bottom: 4px; }
+  .wi-err { font-size: 11px; color: #a33; line-height: 1.4; }
   .legend {
     background: rgba(255,255,255,0.94); padding: 8px 10px; border-radius: 4px;
     font: 12px/1.5 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
@@ -911,6 +949,193 @@ legend.onAdd = function () {
   return d;
 };
 legend.addTo(map);
+
+
+// --- well impact estimator -------------------------------------------------
+// Extrapolates the developer's own drawdown figures to a visitor's well. Those
+// figures exist at exactly one distance -- a one-mile perimeter, at 1, 10 and
+// 30 years -- so everything past that is inference from three numbers, and the
+// panel says so rather than presenting a confident answer.
+//
+// Least squares on those three against log10(years) gives 1.200 ft per decade
+// of time and reproduces all three within 0.08 ft. Cooper-Jacob drawdown in a
+// confined aquifer goes as log(t / r^2), which fixes the distance coefficient
+// at exactly twice the time coefficient. That is not an extra assumption; it is
+// the curve the developer's own numbers already sit on.
+const DD = {
+  intercept: 3.175,          // feet at one mile, one year
+  perLogYear: 1.200,
+  perLogDist: 2.400,         // per tenfold change in distance
+  minFt: 250,                // inside this, near-well effects dominate
+  maxFt: 3 * 5280            // past this the extrapolation is not defensible
+};
+const drawdownAt = (rFt, yr) =>
+  DD.intercept + DD.perLogYear * Math.log10(yr) + DD.perLogDist * Math.log10(5280 / rFt);
+
+// The developer's separation argument: production is screened 527-737 ft under
+// roughly 520 ft of Gray Shale, and their hydrogeology concludes wells finished
+// above that shale are not hydraulically connected to the pumping interval.
+const SHALLOW_MAX = 500;
+const PRODUCTION_TOP = 527;
+
+let wellPin = null;
+
+function milesBetween(a, b) {
+  const R = 3958.7613, rad = Math.PI / 180;
+  const p1 = a[0] * rad, p2 = b[0] * rad;
+  const dp = p2 - p1, dl = (b[1] - a[1]) * rad;
+  const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function renderEstimate(lat, lon, depth, label) {
+  const miles = milesBetween([lat, lon], CENTER);
+  const ft = miles * 5280;
+  const out = [];
+  out.push('<div class="wi-res">');
+  out.push(`<div class="wi-dist"><b>${miles.toFixed(2)} mi</b> from the Leander Springs well</div>`);
+  if (label) out.push(`<div class="wi-where">${esc(label)}</div>`);
+
+  const deep = depth >= PRODUCTION_TOP;
+  const shallow = depth > 0 && depth <= SHALLOW_MAX;
+
+  if (shallow) {
+    out.push('<div class="wi-verdict shallow"><b>Above the aquitard</b><br>' +
+      `At ${depth} ft your well is finished above the ~520 ft of Gray Shale the ` +
+      'developer says separates their production zone (527&ndash;737 ft) from shallow ' +
+      'wells. <b>Their hydrogeology predicts no drawdown at your well at all</b> ' +
+      '&mdash; not a small number, zero connection. That is their conclusion, not an ' +
+      'independent finding, and it is the single claim most worth testing.</div>');
+  } else if (!deep && depth > 0) {
+    out.push('<div class="wi-verdict mid"><b>Borderline depth</b><br>' +
+      `${depth} ft sits between the base of the shallow zone and the top of the ` +
+      'screened interval at 527 ft. Which side of the shale you are on cannot be ' +
+      'settled from published figures &mdash; it needs your well log.</div>');
+  }
+
+  if (deep || !depth) {
+    if (ft < DD.minFt) {
+      out.push('<div class="wi-verdict mid">Closer than ' + DD.minFt + ' ft. Near-well ' +
+        'effects dominate here and a curve fitted to a one-mile figure says nothing ' +
+        'useful. This needs a real assessment.</div>');
+    } else if (ft > DD.maxFt) {
+      out.push('<div class="wi-verdict mid">Beyond 3 miles. The developer published ' +
+        'drawdown at one mile only; stretching that curve this far is not defensible, ' +
+        'so no number is given. For scale, the model would still read about ' +
+        drawdownAt(Math.min(ft, 10 * 5280), 30).toFixed(1) + ' ft here &mdash; which is ' +
+        'mostly a sign the model has no natural zero, not a prediction.</div>');
+    } else {
+      const rows = [1, 10, 30].map(yr =>
+        `<tr><td>${yr} year${yr > 1 ? 's' : ''}</td><td>${drawdownAt(ft, yr).toFixed(1)} ft</td></tr>`
+      ).join('');
+      out.push(`<table class="wi-table"><tr><th>After</th><th>Drawdown</th></tr>${rows}</table>`);
+      out.push('<div class="wi-fine">Water level in the <b>producing interval</b>, not the ' +
+        'depth of your pump. Extrapolated from the developer&rsquo;s one-mile figures ' +
+        '(3.2 / 4.3 / 5.0 ft) on the Cooper-Jacob curve their own numbers follow.</div>');
+      if (!depth) out.push('<div class="wi-fine">No depth entered, so this assumes your ' +
+        'well reaches the same interval. Enter a depth to check that.</div>');
+    }
+  }
+  out.push('</div>');
+  return out.join('');
+}
+
+function dropPin(lat, lon, html) {
+  if (wellPin) map.removeLayer(wellPin);
+  wellPin = L.circleMarker([lat, lon], {
+    radius: 8, color: '#111', weight: 3, fillColor: '#fff', fillOpacity: 1
+  }).addTo(map);
+  wellPin.bindPopup('<h3>Your well</h3>' + html, { maxWidth: 300 });
+  map.panTo([lat, lon]);
+}
+
+const wellTool = L.control({ position: 'topleft' });
+wellTool.onAdd = function () {
+  const d = L.DomUtil.create('div', 'scale-key wi-card');
+  d.innerHTML =
+    '<details><summary><b><span class="card-full">Estimate impact at your well</span>' +
+    '<span class="card-short">My well</span></b></summary>' +
+    '<div class="note">extrapolated from the developer&rsquo;s own figures</div>' +
+    '<label for="wi-addr">Address, or &ldquo;lat, lon&rdquo;</label>' +
+    '<input id="wi-addr" type="text" autocomplete="off" placeholder="123 Example Dr, Leander TX">' +
+    '<label for="wi-depth">Well depth in feet <span style="color:#888">(optional)</span></label>' +
+    '<input id="wi-depth" type="number" min="0" max="5000" step="10" placeholder="e.g. 320">' +
+    '<div class="wi-row"><button id="wi-go" class="wi-primary">Estimate</button>' +
+    '<button id="wi-clear">Clear</button></div>' +
+    '<div id="wi-out"></div>' +
+    '<div class="foot"><b>Not a well assessment.</b> It extrapolates three published ' +
+    'numbers and cannot see your well log, the local faulting, or which unit you are ' +
+    'actually screened in.<br><br>Your address is sent to OpenStreetMap&rsquo;s public ' +
+    'geocoder to turn it into coordinates. Nothing is stored and nothing goes anywhere ' +
+    'else &mdash; type &ldquo;30.58, -97.84&rdquo; instead to skip that entirely.</div>' +
+    '</details>';
+  L.DomEvent.disableClickPropagation(d);
+  L.DomEvent.disableScrollPropagation(d);
+  return d;
+};
+wellTool.addTo(map);
+
+{
+  const addr = document.getElementById('wi-addr');
+  const depth = document.getElementById('wi-depth');
+  const out = document.getElementById('wi-out');
+
+  // Map keyboard shortcuts would otherwise eat "+", "-" and the arrow keys.
+  [addr, depth].forEach(el => {
+    el.addEventListener('focus', () => map.keyboard.disable());
+    el.addEventListener('blur', () => map.keyboard.enable());
+  });
+
+  const show = html => { out.innerHTML = html; };
+  const depthVal = () => Math.max(0, parseInt(depth.value, 10) || 0);
+
+  async function locate() {
+    const q = addr.value.trim();
+    if (!q) { show('<div class="wi-err">Enter an address or a pair of coordinates.</div>'); return; }
+
+    const pair = q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (pair) {
+      const lat = parseFloat(pair[1]), lon = parseFloat(pair[2]);
+      if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+        show('<div class="wi-err">Those coordinates are out of range.</div>'); return;
+      }
+      const html = renderEstimate(lat, lon, depthVal(), '');
+      show(html); dropPin(lat, lon, html); return;
+    }
+
+    show('<div class="wi-fine">Looking up that address&hellip;</div>');
+    try {
+      // Bounded to the map's own area: a bare street name should not resolve to
+      // another state, and a wrong pin here reads as a real answer.
+      const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1' +
+                  '&countrycodes=us&bounded=1&viewbox=-98.40,31.00,-97.20,30.20&q=' +
+                  encodeURIComponent(q);
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) throw new Error('geocoder returned ' + r.status);
+      const hits = await r.json();
+      if (!hits.length) {
+        show('<div class="wi-err">No match inside the mapped area. Try adding the city, ' +
+             'or enter coordinates as &ldquo;30.58, -97.84&rdquo;.</div>');
+        return;
+      }
+      const lat = parseFloat(hits[0].lat), lon = parseFloat(hits[0].lon);
+      const html = renderEstimate(lat, lon, depthVal(), hits[0].display_name);
+      show(html); dropPin(lat, lon, html);
+    } catch (e) {
+      show('<div class="wi-err">Could not reach the geocoder. Enter coordinates as ' +
+           '&ldquo;30.58, -97.84&rdquo; instead.</div>');
+      console.error('geocode failed', e);
+    }
+  }
+
+  document.getElementById('wi-go').addEventListener('click', locate);
+  addr.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); locate(); } });
+  depth.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); locate(); } });
+  document.getElementById('wi-clear').addEventListener('click', () => {
+    addr.value = ''; depth.value = ''; out.innerHTML = '';
+    if (wellPin) { map.removeLayer(wellPin); wellPin = null; }
+  });
+}
 
 // --- card open/closed state ----------------------------------------------
 // Every card is authored closed; this is what opens them on a big screen, so a
